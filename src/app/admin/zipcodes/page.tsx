@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminZipcodesPage() {
   await requireAdmin();
   const db = getDb();
-  const zips = db.prepare("SELECT * FROM zip_codes ORDER BY zip").all() as Array<Record<string, unknown>>;
+  const zips = await db.prepare("SELECT * FROM zip_codes ORDER BY zip").all() as Array<Record<string, unknown>>;
 
   return (
     <Container className="!px-0">

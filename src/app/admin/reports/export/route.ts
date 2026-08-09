@@ -110,9 +110,9 @@ export async function GET(request: Request) {
     });
   }
 
-  const rows = getDb().prepare(report.sql).all() as Row[];
+  const rows = await getDb().prepare(report.sql).all() as Row[];
   const csv = toCsv(rows);
-  audit(user.id, user.role, "report_exported", "report", type, { rows: rows.length });
+  await audit(user.id, user.role, "report_exported", "report", type, { rows: rows.length });
 
   const stamp = new Date().toISOString().slice(0, 10);
   return new Response("﻿" + csv, {

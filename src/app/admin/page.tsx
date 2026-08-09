@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
   await requireAdmin();
-  runAutomations();
-  const s = adminStats();
+  await runAutomations();
+  const s = await adminStats();
 
   return (
     <Container className="!px-0">

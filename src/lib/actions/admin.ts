@@ -29,21 +29,23 @@ const leadSchema = z.object({
   source: z.string().min(1),
 });
 
-function insertLeadRow(db: ReturnType<typeof getDb>, data: Record<string, unknown>, createdBy: number) {
+async function insertLeadRow(db: ReturnType<typeof getDb>, data: Record<string, unknown>, createdBy: number): Promise<number> {
   const now = new Date().toISOString();
-  return db
+  const row = (await db
     .prepare(
       `INSERT INTO leads (first_name, last_name, email, phone, lead_type, specialty, city, state, zip, budget_min, budget_max, notes, source, status, assigned_agent_id, created_by, created_at, updated_at)
-       VALUES (@first_name, @last_name, @email, @phone, @lead_type, @specialty, @city, @state, @zip, @budget_min, @budget_max, @notes, @source, 'new', NULL, @created_by, @created_at, @updated_at)`
+       VALUES (@first_name, @last_name, @email, @phone, @lead_type, @specialty, @city, @state, @zip, @budget_min, @budget_max, @notes, @source, 'new', NULL, @created_by, @created_at, @updated_at)
+       RETURNING id`
     )
-    .run({
+    .get({
       ...data,
       budget_min: data.budget_min ? Number(data.budget_min) : null,
       budget_max: data.budget_max ? Number(data.budget_max) : null,
       created_by: createdBy,
       created_at: now,
       updated_at: now,
-    }).lastInsertRowid;
+    })) as { id: number };
+  return row.id;
 }
 
 export async function createLeadAction(prevState: unknown, formData: FormData) {
@@ -71,13 +73,13 @@ export async function createLeadAction(prevState: unknown, formData: FormData) {
 
   const db = getDb();
   const leadId = Number(insertLeadRow(db, parsed.data, admin.id));
-  audit(admin.id, admin.role, "lead_created", "lead", leadId, { source: parsed.data.source });
+  await audit(admin.id, admin.role, "lead_created", "lead", leadId, { source: parsed.data.source });
 
   const autoAssign = formData.get("auto_assign") === "1";
   if (autoAssign) {
-    const result = assignLead(leadId, admin.id);
+    const result = await assignLead(leadId, admin.id);
     if (!result.assigned) {
-      createNotification(admin.id, "assignment", "Lead created", `${parsed.data.first_name} ${parsed.data.last_name} could not be auto-assigned (no eligible agent).`);
+      await createNotification(admin.id, "assignment", "Lead created", `${parsed.data.first_name} ${parsed.data.last_name} could not be auto-assigned (no eligible agent).`);
     }
   }
 
@@ -110,7 +112,7 @@ export async function updateLeadAction(prevState: unknown, formData: FormData) {
   if (!LEAD_STATUSES.includes(status as (typeof LEAD_STATUSES)[number])) return { error: "Invalid status." };
 
   const db = getDb();
-  db.prepare(
+  await db.prepare(
     `UPDATE leads SET first_name = ?, last_name = ?, email = ?, phone = ?, lead_type = ?, specialty = ?, city = ?, state = ?, zip = ?, budget_min = ?, budget_max = ?, notes = ?, source = ?, status = ?, updated_at = ? WHERE id = ?`
   ).run(
     parsed.data.first_name, parsed.data.last_name, parsed.data.email, parsed.data.phone,
@@ -119,7 +121,7 @@ export async function updateLeadAction(prevState: unknown, formData: FormData) {
     parsed.data.budget_max ? Number(parsed.data.budget_max) : null,
     parsed.data.notes, parsed.data.source, status, new Date().toISOString(), id
   );
-  audit(admin.id, admin.role, "lead_updated", "lead", id, { status });
+  await audit(admin.id, admin.role, "lead_updated", "lead", id, { status });
   revalidatePath("/admin/leads");
   revalidatePath("/admin/leads/" + id);
   return { ok: true };
@@ -133,17 +135,17 @@ export async function reassignLeadAction(prevState: unknown, formData: FormData)
   if (!leadId || !agentId) return { error: "Select an agent." };
 
   const db = getDb();
-  const lead = db.prepare("SELECT first_name, last_name FROM leads WHERE id = ?").get(leadId) as { first_name: string; last_name: string } | undefined;
+  const lead = await db.prepare("SELECT first_name, last_name FROM leads WHERE id = ?").get(leadId) as { first_name: string; last_name: string } | undefined;
   if (!lead) return { error: "Lead not found." };
 
-  db.prepare(
+  await db.prepare(
     "INSERT INTO lead_assignments (lead_id, agent_id, assigned_by, reason, assigned_at, reassigned_from_id) VALUES (?, ?, ?, 'Manual reassignment', ?, ?)"
   ).run(leadId, agentId, admin.id, new Date().toISOString(), null);
-  db.prepare("UPDATE leads SET assigned_agent_id = ?, status = 'new', response_due_at = ?, updated_at = ? WHERE id = ?")
+  await db.prepare("UPDATE leads SET assigned_agent_id = ?, status = 'new', response_due_at = ?, updated_at = ? WHERE id = ?")
     .run(agentId, new Date(Date.now() + 24 * 3600000).toISOString(), new Date().toISOString(), leadId);
 
-  createNotification(agentId, "lead_assignment", "Lead assigned to you", `${lead.first_name} ${lead.last_name} was assigned to you.`);
-  audit(admin.id, admin.role, "lead_reassigned", "lead", leadId, { agentId });
+  await createNotification(agentId, "lead_assignment", "Lead assigned to you", `${lead.first_name} ${lead.last_name} was assigned to you.`);
+  await audit(admin.id, admin.role, "lead_reassigned", "lead", leadId, { agentId });
   revalidatePath("/admin/leads");
   revalidatePath("/admin/leads/" + leadId);
   return { ok: true };
@@ -153,7 +155,7 @@ export async function autoAssignLeadAction(prevState: unknown, formData: FormDat
   const admin = await requireAdminUser();
   if (!admin || admin.role === "agent") return { error: "Not authorized." };
   const leadId = Number(formData.get("leadId"));
-  const result = assignLead(leadId, admin.id);
+  const result = await assignLead(leadId, admin.id);
   if (!result.assigned) return { error: "No eligible agent could be matched." };
   revalidatePath("/admin/leads");
   revalidatePath("/admin/leads/" + leadId);
@@ -164,9 +166,9 @@ export async function unassignLeadAction(prevState: unknown, formData: FormData)
   const admin = await requireAdminUser();
   if (!admin || admin.role === "agent") return { error: "Not authorized." };
   const leadId = Number(formData.get("leadId"));
-  getDb().prepare("UPDATE leads SET assigned_agent_id = NULL, response_due_at = NULL, updated_at = ? WHERE id = ?")
+  await getDb().prepare("UPDATE leads SET assigned_agent_id = NULL, response_due_at = NULL, updated_at = ? WHERE id = ?")
     .run(new Date().toISOString(), leadId);
-  audit(admin.id, admin.role, "lead_unassigned", "lead", leadId);
+  await audit(admin.id, admin.role, "lead_unassigned", "lead", leadId);
   revalidatePath("/admin/leads");
   return { ok: true };
 }
@@ -182,16 +184,16 @@ export async function reviewAgentAction(prevState: unknown, formData: FormData) 
   if (!["pending", "active", "suspended"].includes(status)) return { error: "Invalid status." };
 
   const db = getDb();
-  db.prepare("UPDATE users SET license_verified = ?, market_approved = ?, status = ?, updated_at = ? WHERE id = ?")
+  await db.prepare("UPDATE users SET license_verified = ?, market_approved = ?, status = ?, updated_at = ? WHERE id = ?")
     .run(licenseVerified, marketApproved, status, new Date().toISOString(), userId);
-  const agent = db.prepare("SELECT email FROM users WHERE id = ?").get(userId) as { email: string } | undefined;
-  audit(admin.id, admin.role, "agent_reviewed", "user", userId, { licenseVerified, marketApproved, status });
+  const agent = await db.prepare("SELECT email FROM users WHERE id = ?").get(userId) as { email: string } | undefined;
+  await audit(admin.id, admin.role, "agent_reviewed", "user", userId, { licenseVerified, marketApproved, status });
 
   if (licenseVerified && marketApproved && status === "active") {
-    createNotification(userId, "account_approval", "You're approved", "Your account is approved and active. You can now receive leads.");
-    if (agent) createNotification(userId, "account_approval", "You're approved", "Your account is approved and active.", "email");
+    await createNotification(userId, "account_approval", "You're approved", "Your account is approved and active. You can now receive leads.");
+    if (agent) await createNotification(userId, "account_approval", "You're approved", "Your account is approved and active.", "email");
   } else {
-    createNotification(userId, "account_update", "Account status updated", `Your account status is now "${status}".`);
+    await createNotification(userId, "account_update", "Account status updated", `Your account status is now "${status}".`);
   }
   revalidatePath("/admin/agents");
   revalidatePath("/admin/agents/" + userId);
@@ -215,10 +217,10 @@ export async function addZipAction(prevState: unknown, formData: FormData) {
     market: formData.get("market"),
   });
   if (!parsed.success) return { error: "Enter a valid ZIP, city, and state." };
-  getDb()
+  await getDb()
     .prepare(`INSERT INTO zip_codes (zip, city, state, market, active, created_at) VALUES (?, ?, ?, ?, 1, ?)`)
     .run(parsed.data.zip, parsed.data.city, parsed.data.state, parsed.data.market, new Date().toISOString());
-  audit(admin.id, admin.role, "zip_added", "zip_codes", parsed.data.zip);
+  await audit(admin.id, admin.role, "zip_added", "zip_codes", parsed.data.zip);
   revalidatePath("/admin/zipcodes");
   return { ok: true };
 }
@@ -227,10 +229,10 @@ export async function toggleZipAction(formData: FormData) {
   const admin = await requireAdminUser();
   if (!admin || admin.role === "agent") return;
   const id = Number(formData.get("id"));
-  const zip = getDb().prepare("SELECT active FROM zip_codes WHERE id = ?").get(id) as { active: number } | undefined;
+  const zip = await getDb().prepare("SELECT active FROM zip_codes WHERE id = ?").get(id) as { active: number } | undefined;
   if (!zip) return;
-  getDb().prepare("UPDATE zip_codes SET active = ? WHERE id = ?").run(zip.active ? 0 : 1, id);
-  audit(admin.id, admin.role, "zip_toggled", "zip_codes", id);
+  await getDb().prepare("UPDATE zip_codes SET active = ? WHERE id = ?").run(zip.active ? 0 : 1, id);
+  await audit(admin.id, admin.role, "zip_toggled", "zip_codes", id);
   revalidatePath("/admin/zipcodes");
 }
 
@@ -238,8 +240,8 @@ export async function deleteZipAction(formData: FormData) {
   const admin = await requireAdminUser();
   if (!admin || admin.role === "agent") return;
   const id = Number(formData.get("id"));
-  getDb().prepare("DELETE FROM zip_codes WHERE id = ?").run(id);
-  audit(admin.id, admin.role, "zip_deleted", "zip_codes", id);
+  await getDb().prepare("DELETE FROM zip_codes WHERE id = ?").run(id);
+  await audit(admin.id, admin.role, "zip_deleted", "zip_codes", id);
   revalidatePath("/admin/zipcodes");
 }
 
@@ -270,26 +272,26 @@ export async function createTransactionAction(prevState: unknown, formData: Form
   const referralFee = Math.round(parsed.data.gross_commission * REFERRAL_FEE_RATE);
   const now = new Date().toISOString();
   const feeStatus = parsed.data.status === "closed" ? "closed_fee_due" : parsed.data.status === "under_contract" ? "under_contract" : "pending";
-  const id = Number(
-    getDb()
-      .prepare(
-        `INSERT INTO transactions (lead_id, agent_id, client_name, property_address, estimated_value, status, under_contract_date, closing_date, gross_commission, referral_fee, referral_fee_status, notes, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)`
-      )
-      .run(
-        parsed.data.lead_id, parsed.data.agent_id, parsed.data.client_name, parsed.data.property_address,
-        parsed.data.estimated_value, parsed.data.status,
-        parsed.data.status === "under_contract" || parsed.data.status === "closed" ? now : null,
-        parsed.data.status === "closed" ? now : null,
-        parsed.data.gross_commission, referralFee, feeStatus, now, now
-      ).lastInsertRowid
-  );
-  getDb().prepare("UPDATE leads SET status = ? WHERE id = ?").run(
+  const inserted = (await getDb()
+    .prepare(
+      `INSERT INTO transactions (lead_id, agent_id, client_name, property_address, estimated_value, status, under_contract_date, closing_date, gross_commission, referral_fee, referral_fee_status, notes, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)
+       RETURNING id`
+    )
+    .get(
+      parsed.data.lead_id, parsed.data.agent_id, parsed.data.client_name, parsed.data.property_address,
+      parsed.data.estimated_value, parsed.data.status,
+      parsed.data.status === "under_contract" || parsed.data.status === "closed" ? now : null,
+      parsed.data.status === "closed" ? now : null,
+      parsed.data.gross_commission, referralFee, feeStatus, now, now
+    )) as { id: number };
+  const id = inserted.id;
+  await getDb().prepare("UPDATE leads SET status = ? WHERE id = ?").run(
     parsed.data.status === "closed" ? "closed" : "under_contract",
     parsed.data.lead_id
   );
-  createNotification(parsed.data.agent_id, "transaction", "Transaction recorded", `A transaction was recorded for ${parsed.data.client_name}.`);
-  audit(admin.id, admin.role, "transaction_created", "transaction", id, { referralFee });
+  await createNotification(parsed.data.agent_id, "transaction", "Transaction recorded", `A transaction was recorded for ${parsed.data.client_name}.`);
+  await audit(admin.id, admin.role, "transaction_created", "transaction", id, { referralFee });
   revalidatePath("/admin/transactions");
   revalidatePath("/admin/leads");
   return { ok: true };
@@ -316,11 +318,11 @@ export async function updateTransactionAction(prevState: unknown, formData: Form
   const db = getDb();
   const now = new Date().toISOString();
   const referralFee = Math.round(parsed.data.gross_commission * REFERRAL_FEE_RATE);
-  const existing = db.prepare("SELECT * FROM transactions WHERE id = ?").get(parsed.data.id) as
+  const existing = await db.prepare("SELECT * FROM transactions WHERE id = ?").get(parsed.data.id) as
     | { lead_id: number; agent_id: number; closing_date: string | null } | undefined;
   if (!existing) return { error: "Transaction not found." };
 
-  db.prepare(
+  await db.prepare(
     `UPDATE transactions SET status = ?, gross_commission = ?, referral_fee = ?, referral_fee_status = ?, closing_date = ?, updated_at = ? WHERE id = ?`
   ).run(
     parsed.data.status, parsed.data.gross_commission, referralFee, parsed.data.fee_status,
@@ -328,7 +330,7 @@ export async function updateTransactionAction(prevState: unknown, formData: Form
   );
 
   if (parsed.data.fee_status === "paid") {
-    createNotification(
+    await createNotification(
       existing.agent_id,
       "payment",
       "Referral fee paid",
@@ -338,7 +340,7 @@ export async function updateTransactionAction(prevState: unknown, formData: Form
     );
   }
   if (parsed.data.status === "under_contract") {
-    createNotification(
+    await createNotification(
       existing.agent_id,
       "contract_entered",
       "Transaction under contract",
@@ -347,7 +349,7 @@ export async function updateTransactionAction(prevState: unknown, formData: Form
       `under_contract:${parsed.data.id}`
     );
   }
-  audit(admin.id, admin.role, "transaction_updated", "transaction", parsed.data.id, { status: parsed.data.status, fee: parsed.data.fee_status });
+  await audit(admin.id, admin.role, "transaction_updated", "transaction", parsed.data.id, { status: parsed.data.status, fee: parsed.data.fee_status });
   revalidatePath("/admin/transactions");
   revalidatePath("/admin/reports");
   return { ok: true };
@@ -360,9 +362,9 @@ export async function sendAdminNotificationAction(prevState: unknown, formData: 
   const title = String(formData.get("title") || "").trim();
   const body = String(formData.get("body") || "").trim();
   if (!title || !body) return { error: "Title and message are required." };
-  createNotification(userId, "admin_message", title, body, "in_app");
-  createNotification(userId, "admin_message", title, body, "email");
-  audit(admin.id, admin.role, "notification_sent", "notification", userId, { title });
+  await createNotification(userId, "admin_message", title, body, "in_app");
+  await createNotification(userId, "admin_message", title, body, "email");
+  await audit(admin.id, admin.role, "notification_sent", "notification", userId, { title });
   revalidatePath("/admin/notifications");
   return { ok: true };
 }
@@ -372,7 +374,7 @@ export async function markNotificationReadAction(formData: FormData) {
   if (!user || user.role === "agent") return;
   const id = Number(formData.get("id"));
   if (!id) return;
-  getDb()
+  await getDb()
     .prepare("UPDATE notifications SET read_at = ? WHERE id = ? AND read_at IS NULL")
     .run(new Date().toISOString(), id);
   revalidatePath("/admin/notifications");
@@ -381,7 +383,7 @@ export async function markNotificationReadAction(formData: FormData) {
 export async function markAllNotificationsReadAction() {
   const user = await getSessionUser();
   if (!user || user.role === "agent") return;
-  getDb()
+  await getDb()
     .prepare("UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL")
     .run(new Date().toISOString(), user.id);
   revalidatePath("/admin/notifications");
@@ -418,13 +420,13 @@ export async function publishAgreementAction(prevState: unknown, formData: FormD
   }
 
   const db = getDb();
-  const clash = db.prepare("SELECT id FROM agreement_versions WHERE version = ?").get(parsed.data.version);
+  const clash = await db.prepare("SELECT id FROM agreement_versions WHERE version = ?").get(parsed.data.version);
   if (clash) return { error: `Version ${parsed.data.version} already exists.` };
 
   const now = new Date().toISOString();
-  const tx = db.transaction(() => {
-    db.prepare("UPDATE agreement_versions SET active = 0").run();
-    db.prepare(
+  await db.transaction(async (tx) => {
+    await tx.prepare("UPDATE agreement_versions SET active = 0").run();
+    await tx.prepare(
       `INSERT INTO agreement_versions (version, title, body, referral_rate, effective_date, active, created_by, created_at)
        VALUES (?, ?, ?, ?, ?, 1, ?, ?)`
     ).run(
@@ -437,11 +439,10 @@ export async function publishAgreementAction(prevState: unknown, formData: FormD
       now
     );
   });
-  tx();
 
-  const agents = db.prepare("SELECT id FROM users WHERE role = 'agent'").all() as { id: number }[];
+  const agents = await db.prepare("SELECT id FROM users WHERE role = 'agent'").all() as { id: number }[];
   for (const a of agents) {
-    createNotification(
+    await createNotification(
       a.id,
       "agreement_update",
       "Referral agreement updated",
@@ -451,7 +452,7 @@ export async function publishAgreementAction(prevState: unknown, formData: FormD
     );
   }
 
-  audit(admin.id, admin.role, "agreement_published", "agreement", parsed.data.version, {
+  await audit(admin.id, admin.role, "agreement_published", "agreement", parsed.data.version, {
     rate: parsed.data.referral_rate,
   });
   revalidatePath("/admin/agreements");
@@ -465,12 +466,11 @@ export async function activateAgreementAction(formData: FormData) {
   const id = Number(formData.get("id"));
   if (!id) return;
   const db = getDb();
-  const tx = db.transaction(() => {
-    db.prepare("UPDATE agreement_versions SET active = 0").run();
-    db.prepare("UPDATE agreement_versions SET active = 1 WHERE id = ?").run(id);
+  await db.transaction(async (tx) => {
+    await tx.prepare("UPDATE agreement_versions SET active = 0").run();
+    await tx.prepare("UPDATE agreement_versions SET active = 1 WHERE id = ?").run(id);
   });
-  tx();
-  audit(admin.id, admin.role, "agreement_activated", "agreement", id);
+  await audit(admin.id, admin.role, "agreement_activated", "agreement", id);
   revalidatePath("/admin/agreements");
   revalidatePath("/dashboard/documents");
 }

@@ -36,9 +36,9 @@ function specialtyMatches(leadSpecialty: Specialty, agentSpecialties: string[]):
   );
 }
 
-export function findBestAgent(lead: Lead): number | null {
+export async function findBestAgent(lead: Lead): Promise<number | null> {
   const db = getDb();
-  const rows = db
+  const rows = await db
     .prepare(
       `SELECT u.id, u.email, p.*,
          (SELECT COUNT(*) FROM leads l WHERE l.assigned_agent_id = u.id AND l.status NOT IN ('closed', 'lost')) AS activeCount
@@ -119,19 +119,19 @@ export function findBestAgent(lead: Lead): number | null {
   return eligible[0].id;
 }
 
-export function assignLead(leadId: number, assignedBy: number, manualAgentId: number | null = null): AssignmentResult {
+export async function assignLead(leadId: number, assignedBy: number, manualAgentId: number | null = null): Promise<AssignmentResult> {
   const db = getDb();
-  const lead = db.prepare("SELECT * FROM leads WHERE id = ?").get(leadId) as Lead | undefined;
+  const lead = await db.prepare("SELECT * FROM leads WHERE id = ?").get(leadId) as Lead | undefined;
   if (!lead) return { assigned: false, agentId: null, reason: "Lead not found" };
 
-  const targetId = manualAgentId ?? findBestAgent(lead);
+  const targetId = manualAgentId ?? (await findBestAgent(lead));
   if (!targetId) {
     return { assigned: false, agentId: null, reason: "No eligible agent available" };
   }
 
   const wasAssigned = lead.assigned_agent_id;
   const reasons: string[] = [];
-  const agentRow = db.prepare("SELECT * FROM agent_profiles WHERE user_id = ?").get(targetId) as
+  const agentRow = await db.prepare("SELECT * FROM agent_profiles WHERE user_id = ?").get(targetId) as
     | (Omit<AgentProfile, "zip_codes" | "specialties" | "social_links"> & {
         zip_codes: string;
         specialties: string;
@@ -158,24 +158,23 @@ export function assignLead(leadId: number, assignedBy: number, manualAgentId: nu
   const now = new Date().toISOString();
   const dueAt = new Date(Date.now() + DEFAULT_RESPONSE_SLA_HOURS * 3600000).toISOString();
 
-  const tx = db.transaction(() => {
-    db.prepare("INSERT INTO lead_assignments (lead_id, agent_id, assigned_by, reason, assigned_at, reassigned_from_id) VALUES (?, ?, ?, ?, ?, ?)")
+  await db.transaction(async (tx) => {
+    await tx.prepare("INSERT INTO lead_assignments (lead_id, agent_id, assigned_by, reason, assigned_at, reassigned_from_id) VALUES (?, ?, ?, ?, ?, ?)")
       .run(leadId, targetId, assignedBy, reason, now, wasAssigned);
-    db.prepare("UPDATE leads SET assigned_agent_id = ?, response_due_at = ?, updated_at = ? WHERE id = ?")
+    await tx.prepare("UPDATE leads SET assigned_agent_id = ?, response_due_at = ?, updated_at = ? WHERE id = ?")
       .run(targetId, dueAt, now, leadId);
-    db.prepare("UPDATE agent_profiles SET last_active_at = ?, updated_at = ? WHERE user_id = ?").run(now, now, targetId);
+    await tx.prepare("UPDATE agent_profiles SET last_active_at = ?, updated_at = ? WHERE user_id = ?").run(now, now, targetId);
   });
-  tx();
 
-  const agent = db.prepare("SELECT email FROM users WHERE id = ?").get(targetId) as { email: string } | undefined;
+  const agent = await db.prepare("SELECT email FROM users WHERE id = ?").get(targetId) as { email: string } | undefined;
   const phone = agentProfile?.phone ?? null;
   const title = "New lead assigned";
   const body = `${lead.first_name} ${lead.last_name} (${lead.lead_type}, ${lead.city}, ${lead.zip}) was assigned to you.`;
-  createNotification(targetId, "lead_assignment", title, body, "in_app");
-  if (agent?.email) void createNotification(targetId, "lead_assignment", title, body, "email");
+  await createNotification(targetId, "lead_assignment", title, body, "in_app");
+  if (agent?.email) await createNotification(targetId, "lead_assignment", title, body, "email");
   void phone;
 
-  audit(assignedBy, "admin", "lead_assigned", "lead", leadId, { agentId: targetId, reason });
+  await audit(assignedBy, "admin", "lead_assigned", "lead", leadId, { agentId: targetId, reason });
 
   return { assigned: true, agentId: targetId, reason };
 }

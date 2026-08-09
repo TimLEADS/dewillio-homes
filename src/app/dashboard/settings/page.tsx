@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function AgentSettingsPage() {
   const user = await requireAgent();
   const db = getDb();
-  const settings = db
+  const settings = await db
     .prepare("SELECT notify_email, notify_sms FROM user_settings WHERE user_id = ?")
     .get(user.id) as { notify_email: number; notify_sms: number } | undefined;
 

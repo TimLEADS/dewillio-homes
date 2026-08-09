@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const user = await requireAgent();
-  runAutomations();
-  const s = agentStats(user.id);
+  await runAutomations();
+  const s = await agentStats(user.id);
 
   return (
     <Container className="!px-0">

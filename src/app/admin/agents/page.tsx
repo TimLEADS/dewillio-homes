@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminAgentsPage() {
   await requireAdmin();
   const db = getDb();
-  const agents = db
+  const agents = await db
     .prepare(
       `SELECT u.id, u.email, u.status, u.activated, u.license_verified, u.market_approved, u.created_at,
               p.first_name, p.last_name, p.primary_city, p.state, p.brokerage, p.license_state,

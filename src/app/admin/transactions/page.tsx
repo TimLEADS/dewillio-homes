@@ -23,7 +23,7 @@ const FEE_STYLE: Record<string, string> = {
 export default async function AdminTransactionsPage() {
   await requireAdmin();
   const db = getDb();
-  const txs = db
+  const txs = await db
     .prepare(
       `SELECT t.*, p.first_name AS agent_first, p.last_name AS agent_last
        FROM transactions t LEFT JOIN agent_profiles p ON p.user_id = t.agent_id

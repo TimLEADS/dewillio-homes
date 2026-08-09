@@ -1,33 +1,32 @@
 import { getDb } from "./db";
 import type { Appointment, Lead, Transaction } from "./types";
 
-export function agentStats(userId: number) {
+/**
+ * Each `.get()` is now a network round-trip to Postgres, so the independent
+ * counts run concurrently rather than one after another.
+ */
+export async function agentStats(userId: number) {
   const db = getDb();
-  const newLeads = db
-    .prepare("SELECT COUNT(*) AS c FROM leads WHERE assigned_agent_id = ? AND status = 'new'")
-    .get(userId) as { c: number };
-  const activeLeads = db
-    .prepare("SELECT COUNT(*) AS c FROM leads WHERE assigned_agent_id = ? AND status NOT IN ('closed','lost')")
-    .get(userId) as { c: number };
-  const appointments = db
-    .prepare("SELECT COUNT(*) AS c FROM appointments WHERE agent_id = ? AND status IN ('scheduled','rescheduled')")
-    .get(userId) as { c: number };
-  const closed = db
-    .prepare("SELECT COUNT(*) AS c FROM transactions WHERE agent_id = ? AND status = 'closed'")
-    .get(userId) as { c: number };
-  const feesEarned = db
-    .prepare("SELECT COALESCE(SUM(referral_fee), 0) AS s FROM transactions WHERE agent_id = ? AND status = 'closed'")
-    .get(userId) as { s: number };
-  const feesPaid = db
-    .prepare("SELECT COALESCE(SUM(referral_fee), 0) AS s FROM transactions WHERE agent_id = ? AND referral_fee_status = 'paid'")
-    .get(userId) as { s: number };
+  const count = (sql: string) => db.prepare(sql).get(userId) as Promise<{ c: number }>;
+  const sum = (sql: string) => db.prepare(sql).get(userId) as Promise<{ s: number }>;
 
-  const leads = db
-    .prepare("SELECT * FROM leads WHERE assigned_agent_id = ? ORDER BY created_at DESC LIMIT 5")
-    .all(userId) as Lead[];
-  const notifications = db
-    .prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY sent_at DESC LIMIT 5")
-    .all(userId) as Array<{ id: number; type: string; title: string; body: string; sent_at: string; read_at: string | null }>;
+  const [newLeads, activeLeads, appointments, closed, feesEarned, feesPaid, leads, notifications] =
+    await Promise.all([
+      count("SELECT COUNT(*) AS c FROM leads WHERE assigned_agent_id = ? AND status = 'new'"),
+      count("SELECT COUNT(*) AS c FROM leads WHERE assigned_agent_id = ? AND status NOT IN ('closed','lost')"),
+      count("SELECT COUNT(*) AS c FROM appointments WHERE agent_id = ? AND status IN ('scheduled','rescheduled')"),
+      count("SELECT COUNT(*) AS c FROM transactions WHERE agent_id = ? AND status = 'closed'"),
+      sum("SELECT COALESCE(SUM(referral_fee), 0) AS s FROM transactions WHERE agent_id = ? AND status = 'closed'"),
+      sum("SELECT COALESCE(SUM(referral_fee), 0) AS s FROM transactions WHERE agent_id = ? AND referral_fee_status = 'paid'"),
+      db
+        .prepare("SELECT * FROM leads WHERE assigned_agent_id = ? ORDER BY created_at DESC LIMIT 5")
+        .all(userId) as Promise<Lead[]>,
+      db
+        .prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY sent_at DESC LIMIT 5")
+        .all(userId) as Promise<
+        Array<{ id: number; type: string; title: string; body: string; sent_at: string; read_at: string | null }>
+      >,
+    ]);
 
   return {
     newLeads: newLeads.c,
@@ -54,8 +53,8 @@ export interface AgentLeadRow extends Lead {
  * recent appointment so the list can show assignment + appointment status
  * without an N+1 query per row.
  */
-export function agentLeads(userId: number): AgentLeadRow[] {
-  return getDb()
+export async function agentLeads(userId: number): Promise<AgentLeadRow[]> {
+  return (await getDb()
     .prepare(
       `SELECT l.*,
               p.first_name AS agent_first_name,
@@ -74,39 +73,47 @@ export function agentLeads(userId: number): AgentLeadRow[] {
        WHERE l.assigned_agent_id = ?
        ORDER BY l.created_at DESC`
     )
-    .all(userId) as AgentLeadRow[];
+    .all(userId)) as AgentLeadRow[];
 }
 
-export function agentAppointments(userId: number): Array<Appointment & { lead_first_name: string; lead_last_name: string }> {
-  return getDb()
+export async function agentAppointments(userId: number): Promise<Array<Appointment & { lead_first_name: string; lead_last_name: string }>> {
+  return (await getDb()
     .prepare(
       `SELECT a.*, l.first_name AS lead_first_name, l.last_name AS lead_last_name
        FROM appointments a JOIN leads l ON l.id = a.lead_id
        WHERE a.agent_id = ? ORDER BY a.scheduled_at DESC`
     )
-    .all(userId) as Array<Appointment & { lead_first_name: string; lead_last_name: string }>;
+    .all(userId)) as Array<Appointment & { lead_first_name: string; lead_last_name: string }>;
 }
 
-export function agentTransactions(userId: number): Transaction[] {
-  return getDb()
+export async function agentTransactions(userId: number): Promise<Transaction[]> {
+  return (await getDb()
     .prepare("SELECT * FROM transactions WHERE agent_id = ? ORDER BY created_at DESC")
-    .all(userId) as Transaction[];
+    .all(userId)) as Transaction[];
 }
 
-export function adminStats() {
+export async function adminStats() {
   const db = getDb();
-  const agents = db.prepare("SELECT COUNT(*) AS c FROM users WHERE role = 'agent'").get() as { c: number };
-  const pending = db.prepare("SELECT COUNT(*) AS c FROM users WHERE role = 'agent' AND status = 'pending'").get() as { c: number };
-  const active = db.prepare("SELECT COUNT(*) AS c FROM users WHERE role = 'agent' AND status = 'active'").get() as { c: number };
-  const leads = db.prepare("SELECT COUNT(*) AS c FROM leads").get() as { c: number };
-  const unassigned = db.prepare("SELECT COUNT(*) AS c FROM leads WHERE assigned_agent_id IS NULL").get() as { c: number };
-  const closed = db.prepare("SELECT COUNT(*) AS c FROM transactions WHERE status = 'closed'").get() as { c: number };
-  const feesDue = db.prepare("SELECT COALESCE(SUM(referral_fee), 0) AS s FROM transactions WHERE referral_fee_status = 'closed_fee_due'").get() as { s: number };
-  const feesPaid = db.prepare("SELECT COALESCE(SUM(referral_fee), 0) AS s FROM transactions WHERE referral_fee_status = 'paid'").get() as { s: number };
-  const activationRevenue = db.prepare("SELECT COALESCE(SUM(amount), 0) AS s FROM activation_payments").get() as { s: number };
-  const missed = db.prepare(
-    "SELECT COUNT(*) AS c FROM leads WHERE status IN ('new','contacted') AND response_due_at IS NOT NULL AND response_due_at < ?"
-  ).get(new Date().toISOString()) as { c: number };
+  const count = (sql: string, ...params: unknown[]) =>
+    db.prepare(sql).get(...params) as Promise<{ c: number }>;
+  const sum = (sql: string) => db.prepare(sql).get() as Promise<{ s: number }>;
+
+  const [agents, pending, active, leads, unassigned, closed, feesDue, feesPaid, activationRevenue, missed] =
+    await Promise.all([
+      count("SELECT COUNT(*) AS c FROM users WHERE role = 'agent'"),
+      count("SELECT COUNT(*) AS c FROM users WHERE role = 'agent' AND status = 'pending'"),
+      count("SELECT COUNT(*) AS c FROM users WHERE role = 'agent' AND status = 'active'"),
+      count("SELECT COUNT(*) AS c FROM leads"),
+      count("SELECT COUNT(*) AS c FROM leads WHERE assigned_agent_id IS NULL"),
+      count("SELECT COUNT(*) AS c FROM transactions WHERE status = 'closed'"),
+      sum("SELECT COALESCE(SUM(referral_fee), 0) AS s FROM transactions WHERE referral_fee_status = 'closed_fee_due'"),
+      sum("SELECT COALESCE(SUM(referral_fee), 0) AS s FROM transactions WHERE referral_fee_status = 'paid'"),
+      sum("SELECT COALESCE(SUM(amount), 0) AS s FROM activation_payments"),
+      count(
+        "SELECT COUNT(*) AS c FROM leads WHERE status IN ('new','contacted') AND response_due_at IS NOT NULL AND response_due_at < ?",
+        new Date().toISOString()
+      ),
+    ]);
 
   return {
     agents: agents.c,

@@ -15,7 +15,7 @@ const FEE_STYLE: Record<string, string> = {
 
 export default async function AgentReferralFeesPage() {
   const user = await requireAgent();
-  const txs = agentTransactions(user.id);
+  const txs = await agentTransactions(user.id);
   const earned = txs.filter((t) => t.status === "closed").reduce((s, t) => s + (t.referral_fee ?? 0), 0);
   const due = txs.filter((t) => t.referral_fee_status === "closed_fee_due").reduce((s, t) => s + (t.referral_fee ?? 0), 0);
   const paid = txs.filter((t) => t.referral_fee_status === "paid").reduce((s, t) => s + (t.referral_fee ?? 0), 0);

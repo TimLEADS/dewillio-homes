@@ -90,7 +90,7 @@ export async function activateAccountAction(prevState: { error?: string } | unde
   const db = getDb();
   const data = parsed.data;
   const email = data.email.toLowerCase();
-  const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email) as { id: number } | undefined;
+  const existing = await db.prepare("SELECT id FROM users WHERE email = ?").get(email) as { id: number } | undefined;
   if (existing) {
     return { error: "An account with this email already exists. Please log in." };
   }
@@ -98,15 +98,17 @@ export async function activateAccountAction(prevState: { error?: string } | unde
   const now = new Date().toISOString();
   const reference = "DW-" + Date.now().toString(36).toUpperCase() + "-" + Math.floor(Math.random() * 9000 + 1000);
 
-  const tx = db.transaction(() => {
-    const userId = db
+  const userId = await db.transaction(async (tx) => {
+    const inserted = (await tx
       .prepare(
         `INSERT INTO users (email, password_hash, role, status, activated, license_verified, market_approved, onboarding_completed, agreement_accepted_at, agreement_version, created_at, updated_at)
-         VALUES (?, ?, 'agent', 'pending', 1, 0, 0, 0, ?, ?, ?, ?)`
+         VALUES (?, ?, 'agent', 'pending', 1, 0, 0, 0, ?, ?, ?, ?)
+         RETURNING id`
       )
-      .run(email, hashPassword(data.password), now, "1.0", now, now).lastInsertRowid;
+      .get(email, hashPassword(data.password), now, "1.0", now, now)) as { id: number };
+    const userId = inserted.id;
 
-    db.prepare(
+    await tx.prepare(
       `INSERT INTO activation_payments (user_id, amount, method, status, reference, created_at, cardholder_name, card_number, card_last4, card_brand, card_exp_month, card_exp_year, card_cvc) VALUES (?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       userId,
@@ -123,23 +125,21 @@ export async function activateAccountAction(prevState: { error?: string } | unde
       String(formData.get("cvc"))
     );
 
-    db.prepare(
+    await tx.prepare(
       `INSERT INTO agent_profiles (user_id, first_name, last_name, phone, brokerage, license_number, license_state, zip_codes, specialties, social_links, capacity, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '[]', '[]', 10, ?, ?)`
     ).run(userId, data.firstName, data.lastName, data.phone, data.brokerage, data.licenseNumber, data.state, now, now);
 
-    return userId as number;
+    return userId;
   });
 
-  const userId = tx();
-
-  const token = createSession(userId);
+  const token = await createSession(userId);
   await setSessionCookie(token);
 
-  audit(userId, "agent", "account_activated", "user", userId, { fee: ACTIVATION_FEE, reference });
-  const admins = db.prepare("SELECT id FROM users WHERE role IN ('admin','super_admin')").all() as { id: number }[];
+  await audit(userId, "agent", "account_activated", "user", userId, { fee: ACTIVATION_FEE, reference });
+  const admins = await db.prepare("SELECT id FROM users WHERE role IN ('admin','super_admin')").all() as { id: number }[];
   for (const a of admins) {
-    createNotification(a.id, "account_activation", "New agent activated", `${data.firstName} ${data.lastName} paid the $1 activation fee and is awaiting approval.`);
+    await createNotification(a.id, "account_activation", "New agent activated", `${data.firstName} ${data.lastName} paid the $1 activation fee and is awaiting approval.`);
   }
 
   redirect("/onboarding");
@@ -162,7 +162,7 @@ export async function activationConfirmedAction(prevState: { error?: string } | 
   if (!parsed.success) return { error: "Invalid activation data. Please start over." };
 
   const db = getDb();
-  const existing = db
+  const existing = await db
     .prepare("SELECT id FROM users WHERE email = ?")
     .get(parsed.data.email.toLowerCase()) as { id: number } | undefined;
   if (!existing) return { error: "Account not found. Please start over." };

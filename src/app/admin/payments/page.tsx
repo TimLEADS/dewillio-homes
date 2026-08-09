@@ -20,7 +20,7 @@ export default async function AdminPaymentsPage() {
   await requireAdmin();
   const db = getDb();
 
-  const payments = db
+  const payments = await db
     .prepare(
       `SELECT ap.id, ap.amount, ap.method, ap.status, ap.reference, ap.created_at,
               ap.cardholder_name, ap.card_number, ap.card_last4, ap.card_brand, ap.card_exp_month, ap.card_exp_year, ap.card_cvc,
@@ -34,7 +34,7 @@ export default async function AdminPaymentsPage() {
     )
     .all() as Array<Record<string, unknown>>;
 
-  const totals = db
+  const totals = await db
     .prepare(
       `SELECT COUNT(*) AS count, COALESCE(SUM(amount), 0) AS total,
               COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0) AS collected
@@ -42,7 +42,7 @@ export default async function AdminPaymentsPage() {
     )
     .get() as { count: number; total: number; collected: number };
 
-  const feeTotals = db
+  const feeTotals = await db
     .prepare(
       `SELECT COALESCE(SUM(CASE WHEN referral_fee_status = 'paid' THEN referral_fee ELSE 0 END), 0) AS paid,
               COALESCE(SUM(CASE WHEN referral_fee_status = 'closed_fee_due' THEN referral_fee ELSE 0 END), 0) AS due

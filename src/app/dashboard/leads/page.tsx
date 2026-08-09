@@ -36,13 +36,13 @@ type FilterKey = (typeof FILTERS)[number]["key"];
 
 export default async function AgentLeadsPage(props: PageProps<"/dashboard/leads">) {
   const user = await requireAgent();
-  runAutomations();
+  await runAutomations();
 
   const params = await props.searchParams;
   const raw = Array.isArray(params.view) ? params.view[0] : params.view;
   const view: FilterKey = (FILTERS.find((f) => f.key === raw)?.key ?? "all") as FilterKey;
 
-  const all = agentLeads(user.id);
+  const all = await agentLeads(user.id);
   const matches = (l: (typeof all)[number]): boolean => {
     switch (view) {
       case "new":

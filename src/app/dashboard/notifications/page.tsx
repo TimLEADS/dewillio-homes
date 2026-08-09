@@ -35,10 +35,10 @@ const TYPE_LABEL: Record<string, string> = {
 export default async function AgentNotificationsPage() {
   const user = await requireAgent();
   // Fire any time-based alerts that have come due before rendering the inbox.
-  runAutomations();
+  await runAutomations();
 
   const db = getDb();
-  const rows = db
+  const rows = await db
     .prepare(
       `SELECT * FROM notifications
        WHERE user_id = ? AND channel = 'in_app'

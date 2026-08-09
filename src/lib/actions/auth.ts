@@ -26,7 +26,7 @@ export async function loginAction(prevState: { error?: string } | undefined, for
   }
 
   const db = getDb();
-  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(parsed.data.email.toLowerCase()) as
+  const user = await db.prepare("SELECT * FROM users WHERE email = ?").get(parsed.data.email.toLowerCase()) as
     | { id: number; email: string; password_hash: string; role: string; status: string }
     | undefined;
 
@@ -34,9 +34,9 @@ export async function loginAction(prevState: { error?: string } | undefined, for
     return { error: "Invalid email or password." };
   }
 
-  const token = createSession(user.id);
+  const token = await createSession(user.id);
   await setSessionCookie(token);
-  audit(user.id, user.role, "login", "user", user.id);
+  await audit(user.id, user.role, "login", "user", user.id);
 
   if (user.role === "agent") {
     redirect("/dashboard");
@@ -47,7 +47,7 @@ export async function loginAction(prevState: { error?: string } | undefined, for
 export async function logoutAction() {
   const { getSessionUser } = await import("@/lib/auth");
   const user = await getSessionUser();
-  if (user) audit(user.id, user.role, "logout", "user", user.id);
+  if (user) await audit(user.id, user.role, "logout", "user", user.id);
   await destroySession();
   redirect("/");
 }

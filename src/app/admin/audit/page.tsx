@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminAuditPage() {
   await requireAdmin();
   const db = getDb();
-  const rows = db
+  const rows = await db
     .prepare(
       `SELECT a.*, u.email AS actor_email
        FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_id

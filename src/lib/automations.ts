@@ -17,21 +17,21 @@ export interface AutomationResult {
   feesDue: number;
 }
 
-function adminIds(db: ReturnType<typeof getDb>): number[] {
-  return (db.prepare("SELECT id FROM users WHERE role IN ('admin','super_admin')").all() as { id: number }[]).map(
+async function adminIds(db: ReturnType<typeof getDb>): Promise<number[]> {
+  return (await db.prepare("SELECT id FROM users WHERE role IN ('admin','super_admin')").all() as { id: number }[]).map(
     (r) => r.id
   );
 }
 
-export function runAutomations(): AutomationResult {
+export async function runAutomations(): Promise<AutomationResult> {
   const db = getDb();
   const now = Date.now();
   const nowIso = new Date(now).toISOString();
   const result: AutomationResult = { missedResponses: 0, closingReminders: 0, feesDue: 0 };
-  const admins = adminIds(db);
+  const admins = await adminIds(db);
 
   // 1. Missed response — assigned lead blew through its SLA without a first response.
-  const missed = db
+  const missed = await db
     .prepare(
       `SELECT id, first_name, last_name, assigned_agent_id, response_due_at, city, state, zip
        FROM leads
@@ -56,9 +56,9 @@ export function runAutomations(): AutomationResult {
     const key = `missed_response:${lead.id}:${lead.response_due_at}`;
     const title = "Missed response window";
     const body = `${lead.first_name} ${lead.last_name} (${lead.city}, ${lead.state} ${lead.zip}) passed the response window. Contact this lead as soon as possible.`;
-    createNotification(lead.assigned_agent_id, "missed_response", title, body, "in_app", key);
+    await createNotification(lead.assigned_agent_id, "missed_response", title, body, "in_app", key);
     for (const a of admins) {
-      createNotification(
+      await createNotification(
         a,
         "missed_response",
         "Agent missed a response window",
@@ -72,7 +72,7 @@ export function runAutomations(): AutomationResult {
 
   // 2. Closing reminder — under contract with a closing date inside the window.
   const horizon = new Date(now + CLOSING_REMINDER_WINDOW_DAYS * 86400000).toISOString();
-  const closings = db
+  const closings = await db
     .prepare(
       `SELECT id, agent_id, client_name, closing_date, property_address
        FROM transactions
@@ -91,7 +91,7 @@ export function runAutomations(): AutomationResult {
 
   for (const t of closings) {
     const key = `closing_reminder:${t.id}:${t.closing_date}`;
-    createNotification(
+    await createNotification(
       t.agent_id,
       "closing_reminder",
       "Closing coming up",
@@ -105,7 +105,7 @@ export function runAutomations(): AutomationResult {
   }
 
   // 3. Referral fee due — closed transaction whose fee is outstanding.
-  const due = db
+  const due = await db
     .prepare(
       `SELECT id, agent_id, client_name, referral_fee, closing_date
        FROM transactions
@@ -121,7 +121,7 @@ export function runAutomations(): AutomationResult {
 
   for (const t of due) {
     const key = `fee_due:${t.id}`;
-    createNotification(
+    await createNotification(
       t.agent_id,
       "referral_fee_due",
       "Referral fee due",
@@ -132,7 +132,7 @@ export function runAutomations(): AutomationResult {
       key
     );
     for (const a of admins) {
-      createNotification(
+      await createNotification(
         a,
         "referral_fee_due",
         "Referral fee due for collection",

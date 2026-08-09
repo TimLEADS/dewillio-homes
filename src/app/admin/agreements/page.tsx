@@ -12,7 +12,7 @@ export default async function AdminAgreementsPage() {
   const admin = await requireAdmin();
   const db = getDb();
 
-  const versions = db
+  const versions = await db
     .prepare(`SELECT * FROM agreement_versions ORDER BY active DESC, id DESC`)
     .all() as Array<{
     id: number;
@@ -27,7 +27,7 @@ export default async function AdminAgreementsPage() {
 
   const active = versions.find((v) => v.active === 1);
 
-  const agents = db
+  const agents = await db
     .prepare(
       `SELECT u.id, u.email, u.status, u.agreement_version, u.agreement_accepted_at,
               p.first_name, p.last_name

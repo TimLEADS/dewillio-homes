@@ -1,14 +1,14 @@
 import { getDb } from "./db";
 
-export function audit(
+export async function audit(
   actorId: number | null,
   actorRole: string | null,
   action: string,
   entity: string,
   entityId?: string | number | null,
   details?: Record<string, unknown>
-): void {
-  getDb()
+): Promise<void> {
+  await getDb()
     .prepare(
       `INSERT INTO audit_logs (actor_id, actor_role, action, entity, entity_id, details, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
     )

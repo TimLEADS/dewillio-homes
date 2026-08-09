@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function AgentProfilePage() {
   const user = await requireAgent();
   const db = getDb();
-  const profile = db.prepare("SELECT * FROM agent_profiles WHERE user_id = ?").get(user.id) as {
+  const profile = await db.prepare("SELECT * FROM agent_profiles WHERE user_id = ?").get(user.id) as {
     phone: string | null;
     brokerage: string | null;
     primary_city: string | null;

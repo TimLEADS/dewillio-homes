@@ -40,7 +40,7 @@ function getPool(): Pool {
  * Rewrites better-sqlite3 placeholders into Postgres ones, ignoring anything
  * inside string literals or comments. Returns the bind order for named params.
  */
-function toPgSql(sql: string): { text: string; names: string[] } {
+export function toPgSql(sql: string): { text: string; names: string[] } {
   let out = "";
   const names: string[] = [];
   const indexByName = new Map<string, number>();
@@ -148,7 +148,11 @@ export interface Db {
   transaction<T>(fn: (tx: Db) => Promise<T>): Promise<T>;
 }
 
-type Runner = (text: string, values: unknown[]) => Promise<QueryResult>;
+/**
+ * `values === undefined` selects the simple query protocol, which is the only
+ * one that accepts several statements in a single string (needed by `exec`).
+ */
+type Runner = (text: string, values?: unknown[]) => Promise<QueryResult>;
 
 function makeDb(run: Runner, ensureReady: () => Promise<void>): Db {
   const query = async (sql: string, params: Params) => {
@@ -176,13 +180,13 @@ function makeDb(run: Runner, ensureReady: () => Promise<void>): Db {
     },
     async exec(sql: string) {
       await ensureReady();
-      await run(sql, []);
+      await run(sql);
     },
     async transaction<T>(fn: (tx: Db) => Promise<T>): Promise<T> {
       await ensureReady();
       const client = await getPool().connect();
       const noop = async () => {};
-      const txDb = makeDb((text, values) => client.query(text, values), noop);
+      const txDb = makeDb((text, values) => client.query(text, values as unknown[]), noop);
       try {
         await client.query("BEGIN");
         const result = await fn(txDb);
@@ -216,7 +220,7 @@ async function ensureReady(): Promise<void> {
     try {
       client = await getPool().connect();
       await client.query("SELECT pg_advisory_lock($1)", [LOCK_KEY]);
-      const rawDb = makeDb((text, values) => client!.query(text, values), async () => {});
+      const rawDb = makeDb((text, values) => client!.query(text, values as unknown[]), async () => {});
       await initializer!(rawDb);
       await client.query("SELECT pg_advisory_unlock($1)", [LOCK_KEY]);
     } catch (err) {
@@ -229,7 +233,7 @@ async function ensureReady(): Promise<void> {
   return readyPromise;
 }
 
-const db: Db = makeDb(async (text, values) => getPool().query(text, values), ensureReady);
+const db: Db = makeDb(async (text, values) => getPool().query(text, values as unknown[]), ensureReady);
 
 /** Synchronous handle; the schema is prepared lazily on the first query. */
 export function getPg(): Db {

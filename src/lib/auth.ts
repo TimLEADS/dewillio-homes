@@ -20,12 +20,12 @@ export function verifyPassword(password: string, hash: string): boolean {
   return bcrypt.compareSync(password, hash);
 }
 
-export function createSession(userId: number): string {
+export async function createSession(userId: number): Promise<string> {
   const db = getDb();
   const token = crypto.randomBytes(32).toString("hex");
   const now = new Date();
   const expires = new Date(now.getTime() + SESSION_TTL_DAYS * 86400000);
-  db.prepare("INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)").run(
+  await db.prepare("INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)").run(
     token,
     userId,
     now.toISOString(),
@@ -49,7 +49,7 @@ export async function destroySession(): Promise<void> {
   const c = await cookies();
   const token = c.get(SESSION_COOKIE)?.value;
   if (token) {
-    getDb().prepare("DELETE FROM sessions WHERE token = ?").run(token);
+    await getDb().prepare("DELETE FROM sessions WHERE token = ?").run(token);
   }
   c.delete(SESSION_COOKIE);
 }
@@ -59,7 +59,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const token = c.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const db = getDb();
-  const session = db
+  const session = await db
     .prepare(
       `SELECT s.token, s.expires_at, u.id, u.email, u.role, u.status, u.activated, u.license_verified,
               u.market_approved, u.onboarding_completed, u.agreement_accepted_at, u.agreement_version,
@@ -69,10 +69,10 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     .get(token) as User & { expires_at: string; token: string };
   if (!session) return null;
   if (new Date(session.expires_at).getTime() < Date.now()) {
-    db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+    await db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
     return null;
   }
-  const profile = db.prepare("SELECT * FROM agent_profiles WHERE user_id = ?").get(session.id) as
+  const profile = await db.prepare("SELECT * FROM agent_profiles WHERE user_id = ?").get(session.id) as
     | AgentProfile
     | undefined;
   return {

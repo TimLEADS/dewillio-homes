@@ -15,8 +15,8 @@ export default async function OnboardingPage() {
   if (!user.activated) redirect("/join");
 
   const db = getDb();
-  const profile = (db.prepare("SELECT * FROM agent_profiles WHERE user_id = ?").get(user.id) ??
-    db
+  const profile = (await db.prepare("SELECT * FROM agent_profiles WHERE user_id = ?").get(user.id) ??
+    await db
       .prepare(
         `INSERT INTO agent_profiles (user_id, first_name, last_name, zip_codes, specialties, social_links, capacity, created_at, updated_at)
          VALUES (?, 'Unknown', '', '[]', '[]', '[]', 10, ?, ?) RETURNING *`

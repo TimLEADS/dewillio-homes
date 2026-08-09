@@ -5,7 +5,7 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 export default async function DashboardLayout({ children }: LayoutProps<"/dashboard">) {
   const user = await requireAgent();
   const db = getDb();
-  const unreadRow = db
+  const unreadRow = await db
     .prepare("SELECT COUNT(*) AS c FROM notifications WHERE user_id = ? AND read_at IS NULL")
     .get(user.id) as { c: number };
 

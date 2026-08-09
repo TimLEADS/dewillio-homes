@@ -7,38 +7,38 @@ import type { NotificationChannel } from "./types";
  * checks (missed response, closing reminder, fee due) run on every request
  * without ever sending the same alert twice.
  */
-export function createNotification(
+export async function createNotification(
   userId: number | null,
   type: string,
   title: string,
   body: string,
   channel: NotificationChannel = "in_app",
   dedupeKey?: string
-): number {
+): Promise<number | null> {
   const db = getDb();
-  const result = db
+  const row = (await db
     .prepare(
-      `INSERT OR IGNORE INTO notifications (user_id, type, title, body, channel, sent_at, read_at, dedupe_key)
-       VALUES (?, ?, ?, ?, ?, ?, NULL, ?)`
+      `INSERT INTO notifications (user_id, type, title, body, channel, sent_at, read_at, dedupe_key)
+       VALUES (?, ?, ?, ?, ?, ?, NULL, ?)
+       ON CONFLICT DO NOTHING
+       RETURNING id`
     )
-    .run(userId, type, title, body, channel, new Date().toISOString(), dedupeKey ?? null);
-  return Number(result.lastInsertRowid);
+    .get(userId, type, title, body, channel, new Date().toISOString(), dedupeKey ?? null)) as
+    | { id: number }
+    | undefined;
+  return row?.id ?? null;
 }
 
 /** Returns true when the notification was newly created (not deduped away). */
-export function createNotificationOnce(
+export async function createNotificationOnce(
   userId: number | null,
   type: string,
   title: string,
   body: string,
   dedupeKey: string,
   channel: NotificationChannel = "in_app"
-): boolean {
-  const db = getDb();
-  const before = db.prepare("SELECT COUNT(*) AS c FROM notifications").get() as { c: number };
-  createNotification(userId, type, title, body, channel, dedupeKey);
-  const after = db.prepare("SELECT COUNT(*) AS c FROM notifications").get() as { c: number };
-  return after.c > before.c;
+): Promise<boolean> {
+  return (await createNotification(userId, type, title, body, channel, dedupeKey)) !== null;
 }
 
 export async function sendEmail(to: string, subject: string, body: string): Promise<void> {
@@ -63,20 +63,20 @@ export async function notifyEmailSms(
   dedupeKey?: string
 ): Promise<void> {
   const db = getDb();
-  createNotification(userId, type, title, body, "in_app", dedupeKey);
+  await createNotification(userId, type, title, body, "in_app", dedupeKey);
 
-  const prefs = db
+  const prefs = await db
     .prepare("SELECT notify_email, notify_sms FROM user_settings WHERE user_id = ?")
     .get(userId) as { notify_email: number; notify_sms: number } | undefined;
   const wantsEmail = prefs?.notify_email ?? 1;
   const wantsSms = prefs?.notify_sms ?? 1;
 
   if (wantsEmail && email) {
-    createNotification(userId, type, title, body, "email", dedupeKey ? dedupeKey + ":email" : undefined);
+    await createNotification(userId, type, title, body, "email", dedupeKey ? dedupeKey + ":email" : undefined);
     void sendEmail(email, title, body);
   }
   if (wantsSms && phone) {
-    createNotification(userId, type, title, body, "sms", dedupeKey ? dedupeKey + ":sms" : undefined);
+    await createNotification(userId, type, title, body, "sms", dedupeKey ? dedupeKey + ":sms" : undefined);
     void sendSms(phone, body);
   }
 }

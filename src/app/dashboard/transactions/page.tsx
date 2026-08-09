@@ -21,7 +21,7 @@ const FEE_STYLE: Record<string, string> = {
 
 export default async function AgentTransactionsPage() {
   const user = await requireAgent();
-  const txs = agentTransactions(user.id);
+  const txs = await agentTransactions(user.id);
 
   return (
     <Container className="!px-0">

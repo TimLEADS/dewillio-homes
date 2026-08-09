@@ -15,7 +15,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default async function AgentAppointmentsPage() {
   const user = await requireAgent();
-  const appointments = agentAppointments(user.id);
+  const appointments = await agentAppointments(user.id);
 
   return (
     <Container className="!px-0">

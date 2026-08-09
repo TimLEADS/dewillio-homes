@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminNotificationsPage() {
   await requireAdmin();
   const db = getDb();
-  const rows = db
+  const rows = await db
     .prepare(
       `SELECT n.*, u.email
        FROM notifications n LEFT JOIN users u ON u.id = n.user_id

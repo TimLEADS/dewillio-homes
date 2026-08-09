@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminLeadsPage() {
   await requireAdmin();
   const db = getDb();
-  const leads = db
+  const leads = await db
     .prepare(
       `SELECT l.*, p.first_name AS agent_first, p.last_name AS agent_last
        FROM leads l LEFT JOIN users u ON u.id = l.assigned_agent_id

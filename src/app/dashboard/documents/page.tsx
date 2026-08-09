@@ -11,7 +11,7 @@ export default async function AgentDocumentsPage() {
   const user = await requireAgent();
   const db = getDb();
 
-  const agreement = db
+  const agreement = await db
     .prepare(
       `SELECT version, title, body, referral_rate, effective_date
        FROM agreement_versions WHERE active = 1 ORDER BY id DESC LIMIT 1`
@@ -20,7 +20,7 @@ export default async function AgentDocumentsPage() {
     | { version: string; title: string; body: string; referral_rate: number; effective_date: string }
     | undefined;
 
-  const payments = db
+  const payments = await db
     .prepare("SELECT * FROM activation_payments WHERE user_id = ? ORDER BY created_at DESC")
     .all(user.id) as Array<{
     id: number;

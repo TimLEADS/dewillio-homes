@@ -17,7 +17,7 @@ export default async function AdminAppointmentsPage() {
   await requireAdmin();
   const db = getDb();
 
-  const rows = db
+  const rows = await db
     .prepare(
       `SELECT a.id, a.scheduled_at, a.type, a.notes, a.status, a.created_at,
               l.id AS lead_id, l.first_name AS lead_first, l.last_name AS lead_last,
@@ -33,7 +33,7 @@ export default async function AdminAppointmentsPage() {
     )
     .all() as Array<Record<string, unknown>>;
 
-  const counts = db
+  const counts = await db
     .prepare(
       `SELECT
          COUNT(*) AS total,

@@ -20,7 +20,7 @@ export default async function AdminReportsPage() {
   await requireAdmin();
   const db = getDb();
 
-  const totals = db
+  const totals = await db
     .prepare(
       `SELECT
          COALESCE(SUM(CASE WHEN referral_fee_status = 'paid' THEN referral_fee ELSE 0 END), 0) AS paid,
@@ -31,9 +31,9 @@ export default async function AdminReportsPage() {
     )
     .get() as { paid: number; due: number; disputed: number; total: number };
 
-  const activationRevenue = db.prepare("SELECT COALESCE(SUM(amount), 0) AS s FROM activation_payments").get() as { s: number };
+  const activationRevenue = await db.prepare("SELECT COALESCE(SUM(amount), 0) AS s FROM activation_payments").get() as { s: number };
 
-  const byAgent = db
+  const byAgent = await db
     .prepare(
       `SELECT p.first_name, p.last_name, u.email,
          COUNT(t.id) AS tx_count,
@@ -49,7 +49,7 @@ export default async function AdminReportsPage() {
     )
     .all() as Array<Record<string, unknown>>;
 
-  const byLeadSource = db
+  const byLeadSource = await db
     .prepare(`SELECT source, COUNT(*) AS c FROM leads GROUP BY source ORDER BY c DESC`)
     .all() as Array<Record<string, unknown>>;
 

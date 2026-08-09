@@ -14,7 +14,7 @@ export default async function AdminAgentDetailPage(props: PageProps<"/admin/agen
   const { id } = await props.params;
   const db = getDb();
 
-  const agent = db
+  const agent = await db
     .prepare(
       `SELECT u.id, u.email, u.status, u.activated, u.license_verified, u.market_approved, u.onboarding_completed, u.created_at, u.updated_at,
               p.first_name, p.last_name, p.phone, p.brokerage, p.license_number, p.license_state, p.years_experience,
@@ -26,10 +26,10 @@ export default async function AdminAgentDetailPage(props: PageProps<"/admin/agen
     .get(id) as Record<string, unknown> | undefined;
   if (!agent) notFound();
 
-  const payments = db.prepare("SELECT * FROM activation_payments WHERE user_id = ? ORDER BY created_at DESC").all(id) as Array<Record<string, unknown>>;
-  const leads = db.prepare("SELECT id, first_name, last_name, lead_type, city, state, zip, status, created_at FROM leads WHERE assigned_agent_id = ? ORDER BY created_at DESC").all(id) as Array<Record<string, unknown>>;
-  const history = db.prepare("SELECT * FROM lead_assignments WHERE agent_id = ? ORDER BY assigned_at DESC LIMIT 20").all(id) as Array<Record<string, unknown>>;
-  const transactions = db.prepare("SELECT id, client_name, status, gross_commission, referral_fee, referral_fee_status FROM transactions WHERE agent_id = ? ORDER BY created_at DESC").all(id) as Array<Record<string, unknown>>;
+  const payments = await db.prepare("SELECT * FROM activation_payments WHERE user_id = ? ORDER BY created_at DESC").all(id) as Array<Record<string, unknown>>;
+  const leads = await db.prepare("SELECT id, first_name, last_name, lead_type, city, state, zip, status, created_at FROM leads WHERE assigned_agent_id = ? ORDER BY created_at DESC").all(id) as Array<Record<string, unknown>>;
+  const history = await db.prepare("SELECT * FROM lead_assignments WHERE agent_id = ? ORDER BY assigned_at DESC LIMIT 20").all(id) as Array<Record<string, unknown>>;
+  const transactions = await db.prepare("SELECT id, client_name, status, gross_commission, referral_fee, referral_fee_status FROM transactions WHERE agent_id = ? ORDER BY created_at DESC").all(id) as Array<Record<string, unknown>>;
 
   const name = `${agent.first_name ?? "Unknown"} ${agent.last_name ?? ""}`;
   const zipCodes = JSON.parse(String(agent.zip_codes ?? "[]")) as string[];

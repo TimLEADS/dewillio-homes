@@ -15,7 +15,7 @@ export default async function AdminLeadDetailPage(props: PageProps<"/admin/leads
   const { id } = await props.params;
   const db = getDb();
 
-  const lead = db
+  const lead = await db
     .prepare(
       `SELECT l.*, p.first_name AS agent_first, p.last_name AS agent_last
        FROM leads l LEFT JOIN users u ON u.id = l.assigned_agent_id
@@ -25,22 +25,22 @@ export default async function AdminLeadDetailPage(props: PageProps<"/admin/leads
     .get(id) as Record<string, unknown> | undefined;
   if (!lead) notFound();
 
-  const history = db.prepare(
+  const history = await db.prepare(
     `SELECT h.*, p.first_name AS agent_first, p.last_name AS agent_last
      FROM lead_assignments h
      LEFT JOIN agent_profiles p ON p.user_id = h.agent_id
      WHERE h.lead_id = ? ORDER BY h.assigned_at DESC`
   ).all(id) as Array<Record<string, unknown>>;
 
-  const appointments = db.prepare(
+  const appointments = await db.prepare(
     `SELECT a.*, p.first_name AS agent_first, p.last_name AS agent_last
      FROM appointments a LEFT JOIN agent_profiles p ON p.user_id = a.agent_id
      WHERE a.lead_id = ? ORDER BY a.scheduled_at DESC`
   ).all(id) as Array<Record<string, unknown>>;
 
-  const transactions = db.prepare("SELECT * FROM transactions WHERE lead_id = ? ORDER BY created_at DESC").all(id) as Array<Record<string, unknown>>;
+  const transactions = await db.prepare("SELECT * FROM transactions WHERE lead_id = ? ORDER BY created_at DESC").all(id) as Array<Record<string, unknown>>;
 
-  const agents = db
+  const agents = await db
     .prepare(
       `SELECT u.id, p.first_name, p.last_name, p.primary_city, p.state,
          (SELECT COUNT(*) FROM leads l WHERE l.assigned_agent_id = u.id AND l.status NOT IN ('closed','lost')) AS active_count,
