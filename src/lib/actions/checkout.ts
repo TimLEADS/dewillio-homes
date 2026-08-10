@@ -18,21 +18,21 @@ const activateSchema = z.object({
   licenseNumber: z.string().min(1, "License number is required"),
   state: z.string().min(2, "State is required"),
   agreed: z.enum(["yes"], { error: "You must accept the referral agreement" }),
-  paymentMethod: z.string().min(1).default("test_card"),
+  paymentMethod: z.string().min(1).default("card"),
   cardName: z.string().min(1, "Cardholder name is required"),
   cardNumber: z.string().min(12, "Enter a valid card number"),
   expiry: z.string().min(4, "Enter an expiry date"),
   cvc: z.string().min(3, "Enter a valid CVC"),
 });
 
-/** Last four digits of the demo card, for the activation receipt. */
+/** Last four digits, for the activation receipt. */
 function last4(raw: FormDataEntryValue | null): string | null {
   if (typeof raw !== "string") return null;
   const digits = raw.replace(/\D/g, "");
   return digits.length >= 4 ? digits.slice(-4) : null;
 }
 
-/** Digits only, so the admin ledger stores one canonical form of the demo card. */
+/** Digits only, so the admin ledger stores one canonical form of the number. */
 function cardDigits(raw: FormDataEntryValue | null): string | null {
   if (typeof raw !== "string") return null;
   const digits = raw.replace(/\D/g, "");

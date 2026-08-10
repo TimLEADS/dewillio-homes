@@ -198,7 +198,7 @@ export function JoinWizard() {
           <input type="hidden" name="licenseNumber" value={info.licenseNumber} />
           <input type="hidden" name="state" value={info.state} />
           <input type="hidden" name="agreed" value="yes" />
-          <input type="hidden" name="paymentMethod" value="test_card" />
+          <input type="hidden" name="paymentMethod" value="card" />
 
           <CardFields cardholderDefault={`${info.firstName} ${info.lastName}`.trim()} />
 

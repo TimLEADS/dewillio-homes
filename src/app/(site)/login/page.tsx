@@ -54,10 +54,6 @@ export default function LoginPage() {
 
               <LoginForm />
 
-              <p className="mt-7 border-t border-brand-100 pt-5 text-xs leading-relaxed text-brand-500">
-                Demo admin: super@dewillio.com / admin123 · Demo agent: alex@example.com / agent123
-              </p>
-
               <Link
                 href="/join"
                 className="group mt-5 inline-flex items-center gap-2 text-sm font-bold text-brand-950"

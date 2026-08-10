@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Lock, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { CardMark } from "@/components/checkout/CardMark";
 import {
   brandSpec,
@@ -16,8 +16,6 @@ import {
 
 /** Marks offered before an issuer is known, in the order shoppers expect. */
 const KNOWN: CardBrand[] = ["visa", "mastercard", "amex", "discover"];
-
-const TEST_CARD = { number: "4242 4242 4242 4242", expiry: "12/29", cvc: "123" };
 
 /** Field styling is shared so the three inputs read as one control. */
 const CELL =
@@ -38,30 +36,14 @@ export function CardFields({ cardholderDefault }: { cardholderDefault: string })
 
   const blur = (key: string) => setTouched((t) => ({ ...t, [key]: true }));
 
-  const fillTestCard = () => {
-    setNumber(TEST_CARD.number);
-    setExpiry(TEST_CARD.expiry);
-    setCvc(TEST_CARD.cvc);
-    setTouched({});
-  };
-
   const edge = (bad: boolean) => (bad ? "border-red-400" : "border-brand-200");
 
   return (
     <div className="space-y-4">
       <div>
-        <div className="mb-1.5 flex items-baseline justify-between">
-          <label htmlFor="cardName" className="text-sm font-medium text-brand-900">
-            Cardholder name
-          </label>
-          <button
-            type="button"
-            onClick={fillTestCard}
-            className="text-xs font-medium text-brand-400 underline-offset-2 hover:text-brand-700 hover:underline"
-          >
-            Use test card
-          </button>
-        </div>
+        <label htmlFor="cardName" className="mb-1.5 block text-sm font-medium text-brand-900">
+          Cardholder name
+        </label>
         <input
           id="cardName"
           name="cardName"
@@ -170,10 +152,6 @@ export function CardFields({ cardholderDefault }: { cardholderDefault: string })
         ) : null}
       </div>
 
-      <p className="flex items-center justify-center gap-1.5 text-xs text-brand-400">
-        <Lock className="h-3.5 w-3.5" />
-        Demo checkout — no real payment is processed and no card is charged.
-      </p>
     </div>
   );
 }
