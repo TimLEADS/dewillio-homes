@@ -1,11 +1,15 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { activateAccountAction } from "@/lib/actions/checkout";
 import { STATES } from "@/lib/constants";
 import { Card, FormError, Input, Label, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
 import { CardFields } from "@/components/checkout/CardFields";
+import { ProcessingOverlay } from "@/components/checkout/ProcessingOverlay";
+
+/** How long the activation screen is shown before the account is created. */
+const PROCESSING_MS = 10_000;
 
 const STEPS = ["Agent Information", "Referral Agreement", "Payment"];
 
@@ -36,7 +40,41 @@ export function JoinWizard() {
   const [info, setInfo] = useState<Info>(INITIAL);
   const [agreed, setAgreed] = useState(false);
   const [infoError, setInfoError] = useState("");
-  const [payState, payAction] = useActionState(activateAccountAction, undefined);
+  const [processing, setProcessing] = useState(false);
+  const payForm = useRef<HTMLFormElement>(null);
+  /** Set once the wait is over, so the second submit is allowed straight through. */
+  const waited = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  /**
+   * A successful activation redirects, which throws past this and leaves the
+   * screen up until the browser navigates. Only a rejection returns a value,
+   * and that has to hand the form back.
+   */
+  const [payState, payAction] = useActionState(
+    async (prev: { error?: string } | undefined, formData: FormData) => {
+      const result = await activateAccountAction(prev, formData);
+      setProcessing(false);
+      return result;
+    },
+    undefined
+  );
+
+  const holdThenSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (waited.current) {
+      waited.current = false; // let this one through, and re-arm for any retry
+      return;
+    }
+    e.preventDefault();
+    if (processing) return; // ignore repeat presses while the screen is up
+    setProcessing(true);
+    timer.current = setTimeout(() => {
+      waited.current = true;
+      payForm.current?.requestSubmit();
+    }, PROCESSING_MS);
+  };
 
   const set = (key: keyof Info) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setInfo((prev) => ({ ...prev, [key]: e.target.value }));
@@ -178,7 +216,8 @@ export function JoinWizard() {
       )}
 
       {step === 2 && (
-        <form action={payAction} className="space-y-4">
+        <form ref={payForm} action={payAction} onSubmit={holdThenSubmit} className="space-y-4">
+          {processing ? <ProcessingOverlay durationMs={PROCESSING_MS} amount="$1.00" /> : null}
           <div className="rounded-xl bg-brand-950 p-5 text-white">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-brand-300">Account Activation</span>
