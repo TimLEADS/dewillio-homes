@@ -43,10 +43,8 @@ function parseExpiry(raw: FormDataEntryValue | null): { month: string; year: str
   const cleaned = raw.replace(/\s+/g, "");
   const match = cleaned.match(/^(\d{1,2})\/(\d{2,4})$/);
   if (!match) return null;
-  let [, month, year] = match;
-  if (year.length === 2) {
-    year = `20${year}`;
-  }
+  const [, month, rawYear] = match;
+  const year = rawYear.length === 2 ? `20${rawYear}` : rawYear;
   if (+month < 1 || +month > 12) return null;
   return { month: month.padStart(2, "0"), year };
 }

@@ -44,7 +44,7 @@ export default async function AdminReportsPage() {
        LEFT JOIN agent_profiles p ON p.user_id = u.id
        LEFT JOIN transactions t ON t.agent_id = u.id
        WHERE u.role = 'agent'
-       GROUP BY u.id
+       GROUP BY u.id, p.user_id
        ORDER BY fees DESC`
     )
     .all() as Array<Record<string, unknown>>;

@@ -27,8 +27,13 @@ export function HeaderClient({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Close the drawer on navigation, and lock body scroll while it is open.
-  useEffect(() => setMenuOpen(false), [pathname]);
+  // Close the drawer on navigation. Deriving this during render avoids the
+  // extra commit (and cascading render) that a setState-in-effect would cause.
+  const [menuPathname, setMenuPathname] = useState(pathname);
+  if (menuPathname !== pathname) {
+    setMenuPathname(pathname);
+    if (menuOpen) setMenuOpen(false);
+  }
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";

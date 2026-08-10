@@ -4,11 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:db": "node scripts/dev-db.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "import-backup": "node --env-file=.env.local scripts/import-backup.mjs",
-    "verify-db": "node --env-file=.env.local scripts/verify-db.mjs"
+    "verify-db": "node --env-file=.env.local --import ./scripts/register-hook.mjs scripts/verify-db.mjs",
+    "test:local": "node --import ./scripts/register-hook.mjs scripts/test-local.mjs",
+    "check:sql": "node --import ./scripts/register-hook.mjs scripts/check-all-sql.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -21,6 +24,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.4",
+    "@electric-sql/pglite-socket": "^0.2.7",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

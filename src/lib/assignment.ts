@@ -41,7 +41,7 @@ export async function findBestAgent(lead: Lead): Promise<number | null> {
   const rows = await db
     .prepare(
       `SELECT u.id, u.email, p.*,
-         (SELECT COUNT(*) FROM leads l WHERE l.assigned_agent_id = u.id AND l.status NOT IN ('closed', 'lost')) AS activeCount
+         (SELECT COUNT(*) FROM leads l WHERE l.assigned_agent_id = u.id AND l.status NOT IN ('closed', 'lost')) AS "activeCount"
        FROM users u
        JOIN agent_profiles p ON p.user_id = u.id
        WHERE u.role = 'agent'

@@ -10,7 +10,10 @@
  *   - `.run()` does NOT populate `lastInsertRowid`; add `RETURNING id` and use `.get()`
  *   - `db.transaction()` takes an async callback and returns a Promise
  */
-import { Pool, neonConfig, type PoolClient, type QueryResult } from "@neondatabase/serverless";
+import { Pool, neonConfig, type QueryResult } from "@neondatabase/serverless";
+
+/** Schema setup runs once per process, serialized across instances by an advisory lock. */
+let readyPromise: Promise<void> | null = null;
 
 // The driver talks WebSocket. Node 22+ ships a global; older runtimes need `ws`.
 if (typeof globalThis.WebSocket === "undefined") {
@@ -18,13 +21,59 @@ if (typeof globalThis.WebSocket === "undefined") {
   neonConfig.webSocketConstructor = require("ws");
 }
 
+/**
+ * Local development against `scripts/dev-db.mjs` rather than Neon. That bridge
+ * serves plain `ws:` on loopback, so the secure-WebSocket default has to go;
+ * and it fronts PGlite, which answers the startup message with a plain
+ * AuthenticationOk, so Neon's password pipelining would desync the stream.
+ * Unset in production, where every default above is the right one.
+ */
+const wsProxy = process.env.PGLITE_WS_PROXY;
+if (wsProxy) {
+  neonConfig.wsProxy = (host, port) => `${wsProxy}/v1?address=${host}:${port}`;
+  neonConfig.useSecureWebSocket = false;
+  neonConfig.pipelineConnect = false;
+}
+
 /** int8 and numeric arrive as strings over the wire; COUNT()/SUM() must stay numbers. */
 const INT8_OID = 20;
 const NUMERIC_OID = 1700;
 
-let pool: Pool | null = null;
+/** The subset of `pg.Pool` this module uses, so tests can supply their own. */
+interface PoolLike {
+  query(text: string, values?: unknown[]): Promise<QueryResult>;
+  connect(): Promise<{
+    query(text: string, values?: unknown[]): Promise<QueryResult>;
+    release(): void;
+  }>;
+}
 
-function getPool(): Pool {
+let pool: PoolLike | null = null;
+let poolOverride: PoolLike | null = null;
+
+/**
+ * Turbopack hands pages and server actions their own instance of this module,
+ * and mints another on every hot reload — each would build its own Pool and
+ * hold its own connection, so a long dev session slowly accumulates them. That
+ * is invisible against Neon but swamps the single-backend local database, so
+ * local mode keeps one pool per process here instead of one per module.
+ */
+interface GlobalWithPool {
+  __dewillioLocalPgPool?: PoolLike;
+}
+const globalForPool = globalThis as unknown as GlobalWithPool;
+
+/**
+ * Test seam: point this module at an in-process Postgres (see
+ * `scripts/test-local.mjs`) instead of a real Neon connection.
+ */
+export function setPoolOverride(override: PoolLike | null): void {
+  poolOverride = override;
+  readyPromise = null;
+}
+
+function getPool(): PoolLike {
+  if (poolOverride) return poolOverride;
   if (pool) return pool;
   const url = process.env.DATABASE_URL;
   if (!url) {
@@ -32,7 +81,17 @@ function getPool(): Pool {
       "DATABASE_URL is not set. Add your Neon connection string to .env.local (locally) and to the Vercel project's Environment Variables."
     );
   }
-  pool = new Pool({ connectionString: url });
+  if (wsProxy && globalForPool.__dewillioLocalPgPool) {
+    pool = globalForPool.__dewillioLocalPgPool;
+    return pool;
+  }
+  pool = new Pool({
+    connectionString: url,
+    // The local bridge fronts a single PGlite backend, so a second client would
+    // share its session and its open transactions. Neon has no such limit.
+    ...(wsProxy ? { max: 1 } : {}),
+  }) as unknown as PoolLike;
+  if (wsProxy) globalForPool.__dewillioLocalPgPool = pool;
   return pool;
 }
 
@@ -202,8 +261,6 @@ function makeDb(run: Runner, ensureReady: () => Promise<void>): Db {
   };
 }
 
-/** Schema setup runs once per process, serialized across instances by an advisory lock. */
-let readyPromise: Promise<void> | null = null;
 let initializer: ((db: Db) => Promise<void>) | null = null;
 
 export function setInitializer(fn: (db: Db) => Promise<void>): void {
@@ -216,7 +273,7 @@ async function ensureReady(): Promise<void> {
   if (!initializer) return;
   if (readyPromise) return readyPromise;
   readyPromise = (async () => {
-    let client: PoolClient | null = null;
+    let client: Awaited<ReturnType<PoolLike["connect"]>> | null = null;
     try {
       client = await getPool().connect();
       await client.query("SELECT pg_advisory_lock($1)", [LOCK_KEY]);

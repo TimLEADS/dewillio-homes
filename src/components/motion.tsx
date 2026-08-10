@@ -27,7 +27,9 @@ function useInView<T extends HTMLElement>(
 ) {
   const ref = useRef<T | null>(null);
   const handler = useRef(onEnter);
-  handler.current = onEnter;
+  useEffect(() => {
+    handler.current = onEnter;
+  }, [onEnter]);
 
   useEffect(() => {
     const el = ref.current;
