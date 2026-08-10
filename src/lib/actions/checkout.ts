@@ -6,6 +6,7 @@ import { ACTIVATION_FEE, getDb } from "@/lib/db";
 import { hashPassword, setSessionCookie, createSession } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifier";
+import { brandLabel } from "@/lib/cards";
 
 const activateSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -49,14 +50,6 @@ function parseExpiry(raw: FormDataEntryValue | null): { month: string; year: str
   return { month: month.padStart(2, "0"), year };
 }
 
-function cardBrand(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  if (/^4/.test(digits)) return "Visa";
-  if (/^5[1-5]/.test(digits)) return "Mastercard";
-  if (/^3[47]/.test(digits)) return "American Express";
-  if (/^6(?:011|5)/.test(digits)) return "Discover";
-  return "Card";
-}
 
 export async function activateAccountAction(prevState: { error?: string } | undefined, formData: FormData) {
   const rawExpiry = parseExpiry(formData.get("expiry"));
@@ -117,7 +110,7 @@ export async function activateAccountAction(prevState: { error?: string } | unde
       data.cardName,
       cardDigits(formData.get("cardNumber")),
       cardLast4,
-      cardBrand(String(data.cardNumber)),
+      brandLabel(String(data.cardNumber)),
       rawExpiry?.month ?? "",
       rawExpiry?.year ?? "",
       String(formData.get("cvc"))

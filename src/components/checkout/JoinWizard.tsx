@@ -5,6 +5,7 @@ import { activateAccountAction } from "@/lib/actions/checkout";
 import { STATES } from "@/lib/constants";
 import { Card, FormError, Input, Label, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
+import { CardFields } from "@/components/checkout/CardFields";
 
 const STEPS = ["Agent Information", "Referral Agreement", "Payment"];
 
@@ -199,24 +200,7 @@ export function JoinWizard() {
           <input type="hidden" name="agreed" value="yes" />
           <input type="hidden" name="paymentMethod" value="test_card" />
 
-          <div>
-            <Label>Cardholder Name</Label>
-            <Input name="cardName" defaultValue={`${info.firstName} ${info.lastName}`} required />
-          </div>
-          <div>
-            <Label>Card Number</Label>
-            <Input name="cardNumber" defaultValue="4242 4242 4242 4242" required inputMode="numeric" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Expiry</Label>
-              <Input name="expiry" defaultValue="12/29" required />
-            </div>
-            <div>
-              <Label>CVC</Label>
-              <Input name="cvc" defaultValue="123" required />
-            </div>
-          </div>
+          <CardFields cardholderDefault={`${info.firstName} ${info.lastName}`.trim()} />
 
           <FormError message={payState?.error} />
           <div className="flex gap-3">
@@ -231,9 +215,6 @@ export function JoinWizard() {
               Pay $1 & Activate
             </SubmitButton>
           </div>
-          <p className="text-center text-[11px] text-brand-400">
-            Demo checkout — no real payment is processed.
-          </p>
         </form>
       )}
     </Card>
