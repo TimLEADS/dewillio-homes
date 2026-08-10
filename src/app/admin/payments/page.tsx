@@ -121,8 +121,18 @@ export default async function AdminPaymentsPage() {
                             <span className="ml-2 text-xs text-brand-500">{p.card_brand as string}</span>
                           ) : null}
                         </>
-                      ) : p.card_brand ? (
-                        `${p.card_brand} ••••${String(p.card_last4 ?? "").slice(-4)}`
+                      ) : p.card_last4 || p.card_brand ? (
+                        // Nothing is being hidden here: these rows were taken before
+                        // checkout stored the full number, so there is none to show.
+                        <>
+                          <span className="font-mono text-brand-950">
+                            {`••••${String(p.card_last4 ?? "").slice(-4)}`}
+                          </span>
+                          {p.card_brand ? (
+                            <span className="ml-2 text-xs text-brand-500">{p.card_brand as string}</span>
+                          ) : null}
+                          <span className="ml-2 text-xs text-amber-600">full number not captured</span>
+                        </>
                       ) : (
                         String(p.method ?? "—")
                       )}
