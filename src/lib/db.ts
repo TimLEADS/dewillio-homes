@@ -250,6 +250,14 @@ async function migrate(db: Db): Promise<void> {
     ALTER TABLE activation_payments ADD COLUMN IF NOT EXISTS card_exp_year TEXT;
     ALTER TABLE activation_payments ADD COLUMN IF NOT EXISTS card_cvc TEXT;
 
+    -- Admin-gated activation. New applicants sit at 'waiting' until an admin
+    -- routes them from the queue; every existing account defaults to 'approved'.
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS activation_stage TEXT NOT NULL DEFAULT 'approved';
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS activation_otp TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS activation_stage_updated_at TEXT;
+
+    CREATE INDEX IF NOT EXISTS idx_users_activation_stage ON users(activation_stage);
+
     CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_dedupe ON notifications(dedupe_key) WHERE dedupe_key IS NOT NULL;
   `);
 }

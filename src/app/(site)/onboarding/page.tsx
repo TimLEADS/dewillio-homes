@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { parseJsonArray } from "@/lib/assignment";
+import { activationDestination } from "@/lib/activation";
 import { Container } from "@/components/ui";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import type { AgentProfile } from "@/lib/types";
@@ -15,6 +16,15 @@ export default async function OnboardingPage() {
   if (!user.activated) redirect("/join");
 
   const db = getDb();
+  // Hold applicants at the activation gate until an admin has approved them, so
+  // onboarding can't be reached by skipping the review.
+  const gate = (await db
+    .prepare("SELECT activation_stage FROM users WHERE id = ?")
+    .get(user.id)) as { activation_stage: string | null } | undefined;
+  if (gate && gate.activation_stage && gate.activation_stage !== "approved") {
+    redirect(activationDestination(gate.activation_stage));
+  }
+
   const profile = (await db.prepare("SELECT * FROM agent_profiles WHERE user_id = ?").get(user.id) ??
     await db
       .prepare(

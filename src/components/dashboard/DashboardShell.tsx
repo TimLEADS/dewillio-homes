@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   User,
   Users,
+  UserCheck,
 } from "lucide-react";
 import { logoutAction } from "@/lib/actions/auth";
 import type { Role } from "@/lib/types";
@@ -37,6 +38,7 @@ const AGENT_NAV: NavItem[] = [
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/admin/activations", label: "Activations", icon: UserCheck },
   { href: "/admin/agents", label: "Agents", icon: Users },
   { href: "/admin/leads", label: "Leads", icon: Handshake },
   { href: "/admin/appointments", label: "Appointments", icon: CalendarDays },
@@ -55,12 +57,14 @@ export function DashboardShell({
   name,
   email,
   unread,
+  activationQueue = 0,
 }: {
   children: React.ReactNode;
   role: Role;
   name: string;
   email: string;
   unread: number;
+  activationQueue?: number;
 }) {
   const pathname = usePathname();
   const nav = role === "agent" ? AGENT_NAV : ADMIN_NAV;
@@ -92,6 +96,11 @@ export function DashboardShell({
                 {item.label === "Notifications" && unread > 0 ? (
                   <span className="ml-auto rounded-full bg-accent-500 px-1.5 py-0.5 text-[10px] font-bold text-brand-950">
                     {unread}
+                  </span>
+                ) : null}
+                {item.label === "Activations" && activationQueue > 0 ? (
+                  <span className={`ml-auto rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-white/20 text-white" : "bg-accent-500 text-brand-950"}`}>
+                    {activationQueue}
                   </span>
                 ) : null}
               </Link>

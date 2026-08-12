@@ -92,11 +92,11 @@ export async function activateAccountAction(prevState: { error?: string } | unde
   const userId = await db.transaction(async (tx) => {
     const inserted = (await tx
       .prepare(
-        `INSERT INTO users (email, password_hash, role, status, activated, license_verified, market_approved, onboarding_completed, agreement_accepted_at, agreement_version, created_at, updated_at)
-         VALUES (?, ?, 'agent', 'pending', 1, 0, 0, 0, ?, ?, ?, ?)
+        `INSERT INTO users (email, password_hash, role, status, activated, license_verified, market_approved, onboarding_completed, agreement_accepted_at, agreement_version, created_at, updated_at, activation_stage, activation_stage_updated_at)
+         VALUES (?, ?, 'agent', 'pending', 1, 0, 0, 0, ?, ?, ?, ?, 'waiting', ?)
          RETURNING id`
       )
-      .get(email, hashPassword(data.password), now, "1.0", now, now)) as { id: number };
+      .get(email, hashPassword(data.password), now, "1.0", now, now, now)) as { id: number };
     const userId = inserted.id;
 
     await tx.prepare(
@@ -130,10 +130,12 @@ export async function activateAccountAction(prevState: { error?: string } | unde
   await audit(userId, "agent", "account_activated", "user", userId, { fee: ACTIVATION_FEE, reference });
   const admins = await db.prepare("SELECT id FROM users WHERE role IN ('admin','super_admin')").all() as { id: number }[];
   for (const a of admins) {
-    await createNotification(a.id, "account_activation", "New agent activated", `${data.firstName} ${data.lastName} paid the $1 activation fee and is awaiting approval.`);
+    await createNotification(a.id, "account_activation", "New activation to review", `${data.firstName} ${data.lastName} paid the $1 activation fee and is waiting in the activation queue.`);
   }
 
-  redirect("/onboarding");
+  // The applicant now waits on a live loading screen; an admin routes them from
+  // /admin/activations to either a one-time code or straight to approval.
+  redirect("/activate/pending");
 }
 
 export async function activationConfirmedAction(prevState: { error?: string } | undefined, formData: FormData) {
