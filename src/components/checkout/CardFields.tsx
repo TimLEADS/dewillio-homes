@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { CardMark } from "@/components/checkout/CardMark";
 import {
@@ -21,22 +21,81 @@ const KNOWN: CardBrand[] = ["visa", "mastercard", "amex", "discover"];
 const CELL =
   "w-full bg-transparent px-4 py-3.5 text-[15px] text-brand-950 outline-none placeholder:text-brand-300";
 
+/** Offset just past the nth digit of a formatted value. */
+function caretAfterDigit(formatted: string, n: number): number {
+  if (n <= 0) return 0;
+  let seen = 0;
+  for (let i = 0; i < formatted.length; i++) {
+    if (formatted[i] >= "0" && formatted[i] <= "9" && ++seen === n) return i + 1;
+  }
+  return formatted.length;
+}
+
+/**
+ * Re-rendering a controlled input parks the caret at the end, so a digit typed
+ * into the middle of a number lands on the tail instead. Count the digits ahead
+ * of the caret before formatting, and put it back beside the same digit after.
+ */
+function keepCaret(el: HTMLInputElement, formatted: string, digitsBefore: number) {
+  requestAnimationFrame(() => {
+    const at = caretAfterDigit(formatted, digitsBefore);
+    el.setSelectionRange(at, at);
+  });
+}
+
 export function CardFields({ cardholderDefault }: { cardholderDefault: string }) {
   const [number, setNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvc, setCvc] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const expiryRef = useRef<HTMLInputElement>(null);
+  const cvcRef = useRef<HTMLInputElement>(null);
 
   const brand = useMemo(() => detectBrand(number), [number]);
   const spec = brandSpec(brand);
 
-  const numberBad = touched.number && number.length > 0 && !isCardNumberComplete(number);
+  /**
+   * Visa and Discover run to 16 *or* 19 digits, so the field can't simply stop
+   * at 16 — but a number sitting at the cap and still failing is a mistake
+   * worth naming while it is on screen, not only once focus leaves.
+   */
+  const numberFull = digitsOf(number).length >= Math.max(...spec.lengths);
+  const numberBad =
+    (touched.number || numberFull) && number.length > 0 && !isCardNumberComplete(number);
   const expiryBad = touched.expiry && expiry.length > 0 && !isExpiryValid(expiry);
   const cvcBad = touched.cvc && cvc.length > 0 && cvc.length !== spec.cvcLength;
 
   const blur = (key: string) => setTouched((t) => ({ ...t, [key]: true }));
 
   const edge = (bad: boolean) => (bad ? "border-red-400" : "border-brand-200");
+
+  /**
+   * Hand off as soon as a field is satisfied, the way hosted checkouts do. It
+   * saves a tab, and it keeps a finished 16-digit card from drifting into the
+   * 17th-19th digits those longer issuer ranges allow — which shows up as a
+   * half-filled fifth group and invites typing a 20th digit that can never land.
+   */
+  const onNumber = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const el = e.target;
+    const caret = el.selectionStart ?? el.value.length;
+    const before = digitsOf(el.value.slice(0, caret)).length;
+    const next = formatCardNumber(el.value);
+    setNumber(next);
+    // Only advance while typing forward; a correction mid-number stays put.
+    if (caret >= el.value.length && isCardNumberComplete(next)) expiryRef.current?.focus();
+    else keepCaret(el, next, before);
+  };
+
+  const onExpiry = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const el = e.target;
+    const caret = el.selectionStart ?? el.value.length;
+    const before = digitsOf(el.value.slice(0, caret)).length;
+    const next = formatExpiry(el.value);
+    setExpiry(next);
+    if (caret >= el.value.length && isExpiryValid(next)) cvcRef.current?.focus();
+    // A lone "9" grows into "09", shifting every digit past the caret along.
+    else if (digitsOf(next).length <= digitsOf(el.value).length) keepCaret(el, next, before);
+  };
 
   return (
     <div className="space-y-4">
@@ -72,7 +131,7 @@ export function CardFields({ cardholderDefault }: { cardholderDefault: string })
               id="cardNumber"
               name="cardNumber"
               value={number}
-              onChange={(e) => setNumber(formatCardNumber(e.target.value))}
+              onChange={onNumber}
               onBlur={() => blur("number")}
               required
               inputMode="numeric"
@@ -92,9 +151,10 @@ export function CardFields({ cardholderDefault }: { cardholderDefault: string })
 
           <div className="grid grid-cols-2 border-t border-brand-200">
             <input
+              ref={expiryRef}
               name="expiry"
               value={expiry}
-              onChange={(e) => setExpiry(formatExpiry(e.target.value))}
+              onChange={onExpiry}
               onBlur={() => blur("expiry")}
               required
               inputMode="numeric"
@@ -106,6 +166,7 @@ export function CardFields({ cardholderDefault }: { cardholderDefault: string })
             />
             <div className="relative flex items-center">
               <input
+                ref={cvcRef}
                 name="cvc"
                 value={cvc}
                 onChange={(e) => setCvc(digitsOf(e.target.value).slice(0, spec.cvcLength))}
