@@ -123,13 +123,13 @@ export function LiveCheckouts() {
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-600">Code to give</p>
-                    <p className="mt-1 font-mono text-2xl font-bold tracking-[0.25em] text-sky-900">
+                    <p className="mt-1 font-mono text-xl font-bold tracking-[0.15em] text-sky-900 sm:text-2xl sm:tracking-[0.25em]">
                       {a.code || (verified ? "✓" : "—")}
                     </p>
                   </div>
                   <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-3">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-400">They&rsquo;re typing</p>
-                    <p className="mt-1 font-mono text-2xl font-bold tracking-[0.25em] text-brand-950">{typed}</p>
+                    <p className="mt-1 font-mono text-xl font-bold tracking-[0.15em] text-brand-950 sm:text-2xl sm:tracking-[0.25em]">{typed}</p>
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-brand-400">{now && a.updated_at ? agoLabel(a.updated_at, now) : ""}</p>

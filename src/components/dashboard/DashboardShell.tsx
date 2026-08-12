@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   Bell,
   CalendarDays,
@@ -12,11 +13,13 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
+  Menu,
   Receipt,
   Settings,
   ShieldCheck,
   User,
   Users,
+  X,
 } from "lucide-react";
 import { logoutAction } from "@/lib/actions/auth";
 import type { Role } from "@/lib/types";
@@ -66,10 +69,26 @@ export function DashboardShell({
 }) {
   const pathname = usePathname();
   const nav = role === "agent" ? AGENT_NAV : ADMIN_NAV;
+  const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
 
   return (
     <div className="flex min-h-screen bg-brand-50/50">
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-brand-100 bg-white">
+      {/* Dim backdrop behind the mobile drawer */}
+      <button
+        type="button"
+        aria-label="Close menu"
+        onClick={close}
+        className={`fixed inset-0 z-40 bg-brand-950/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
+          open ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-[17rem] flex-col border-r border-brand-100 bg-white transition-transform duration-300 ease-out will-change-transform lg:w-60 lg:translate-x-0 ${
+          open ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        }`}
+      >
         <div className="flex h-16 items-center gap-2 border-b border-brand-100 px-5">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-950 text-accent-400">
             <Home size={16} />
@@ -77,6 +96,14 @@ export function DashboardShell({
           <span className="font-serif text-base font-bold text-brand-950">
             Dewilio<span className="text-accent-500"> Homes</span>
           </span>
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Close menu"
+            className="ml-auto rounded-lg p-1.5 text-brand-500 transition-colors hover:bg-brand-50 lg:hidden"
+          >
+            <X size={18} />
+          </button>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           {nav.map((item) => {
@@ -85,8 +112,9 @@ export function DashboardShell({
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={close}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  active ? "bg-brand-950 text-white" : "text-brand-700 hover:bg-brand-50"
+                  active ? "bg-brand-950 text-white" : "text-brand-700 hover:bg-brand-50 active:bg-brand-100"
                 }`}
               >
                 <item.icon size={18} />
@@ -123,20 +151,36 @@ export function DashboardShell({
           </div>
         </div>
       </aside>
-      <main className="ml-60 flex-1">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-brand-100 bg-white/90 px-8 backdrop-blur">
-          <p className="font-serif text-lg font-bold text-brand-950">
-            {role === "agent" ? "Agent Dashboard" : "Admin Backend"}
-          </p>
+
+      <main className="flex-1 lg:ml-60">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-brand-100 bg-white/90 px-4 backdrop-blur sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              aria-label="Open menu"
+              className="-ml-1 rounded-lg p-2 text-brand-700 transition-colors hover:bg-brand-50 lg:hidden"
+            >
+              <Menu size={20} />
+            </button>
+            <p className="truncate font-serif text-base font-bold text-brand-950 sm:text-lg">
+              {role === "agent" ? "Agent Dashboard" : "Admin Backend"}
+            </p>
+          </div>
           <Link
             href={role === "agent" ? "/dashboard/notifications" : "/admin/notifications"}
-            className="flex items-center gap-1.5 rounded-lg bg-brand-950 px-3.5 py-2 text-xs font-semibold text-white hover:bg-brand-800"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-950 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-800"
           >
             <Bell size={14} />
-            Notifications {unread > 0 ? `(${unread})` : ""}
+            <span className="hidden sm:inline">Notifications {unread > 0 ? `(${unread})` : ""}</span>
+            {unread > 0 ? (
+              <span className="min-w-4 rounded-full bg-accent-500 px-1 text-center text-[10px] font-bold text-brand-950 sm:hidden">
+                {unread}
+              </span>
+            ) : null}
           </Link>
         </header>
-        <div className="mx-auto max-w-6xl px-8 py-8">{children}</div>
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">{children}</div>
       </main>
     </div>
   );
