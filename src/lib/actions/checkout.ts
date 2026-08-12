@@ -134,7 +134,7 @@ export async function activateAccountAction(prevState: { error?: string } | unde
   }
 
   // The applicant now waits on a live loading screen; an admin routes them from
-  // /admin/activations to either a one-time code or straight to approval.
+  // the activation queue on /admin/payments to a code or straight to approval.
   redirect("/activate/pending");
 }
 

@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { Badge, Card, Container, StatCard } from "@/components/ui";
 import { DATETIME, MONEY } from "@/lib/constants";
+import { ActivationQueueSection } from "@/components/admin/ActivationQueueSection";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +75,12 @@ export default async function AdminPaymentsPage() {
         <StatCard label="Referral Fees Due" value={MONEY(feeTotals.due)} sub="Closed — fee due" />
       </div>
 
-      <Card className="mt-6 !p-0">
+      <ActivationQueueSection />
+
+      <h2 className="mt-10 font-serif text-lg font-bold text-brand-950">Payment History</h2>
+      <p className="mt-0.5 text-sm text-brand-500">Every recorded $1 activation charge.</p>
+
+      <Card className="mt-4 !p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>

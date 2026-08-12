@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   User,
   Users,
-  UserCheck,
 } from "lucide-react";
 import { logoutAction } from "@/lib/actions/auth";
 import type { Role } from "@/lib/types";
@@ -38,7 +37,6 @@ const AGENT_NAV: NavItem[] = [
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
-  { href: "/admin/activations", label: "Activations", icon: UserCheck },
   { href: "/admin/agents", label: "Agents", icon: Users },
   { href: "/admin/leads", label: "Leads", icon: Handshake },
   { href: "/admin/appointments", label: "Appointments", icon: CalendarDays },
@@ -98,7 +96,7 @@ export function DashboardShell({
                     {unread}
                   </span>
                 ) : null}
-                {item.label === "Activations" && activationQueue > 0 ? (
+                {item.label === "Payments" && activationQueue > 0 ? (
                   <span className={`ml-auto rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-white/20 text-white" : "bg-accent-500 text-brand-950"}`}>
                     {activationQueue}
                   </span>

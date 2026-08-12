@@ -1,13 +1,10 @@
-import { KeyRound, ShieldCheck, Clock } from "lucide-react";
+import { Clock, KeyRound, ShieldCheck } from "lucide-react";
 import { getDb } from "@/lib/db";
-import { requireAdmin } from "@/lib/auth";
-import { Badge, Card, Container } from "@/components/ui";
+import { Badge, Card } from "@/components/ui";
 import { DATETIME } from "@/lib/constants";
 import { stageLabel } from "@/lib/activation";
 import { ActivationControls } from "@/components/admin/ActivationControls";
 import { AutoRefresh } from "@/components/admin/AutoRefresh";
-
-export const dynamic = "force-dynamic";
 
 const STAGE_BADGE: Record<string, string> = {
   waiting: "bg-amber-100 text-amber-800 ring-amber-600/20",
@@ -32,10 +29,13 @@ interface QueueRow {
   card_brand: string | null;
 }
 
-export default async function AdminActivationsPage() {
-  await requireAdmin();
+/**
+ * The live activation queue, shown at the top of the Payments page. Applicants
+ * who paid the $1 fee wait on a loading screen until an admin sends a code or
+ * approves them here; the section auto-refreshes so their state stays current.
+ */
+export async function ActivationQueueSection() {
   const db = getDb();
-
   const rows = (await db
     .prepare(
       `SELECT u.id, u.email, u.created_at, u.activation_stage AS stage, u.activation_otp AS otp,
@@ -54,15 +54,14 @@ export default async function AdminActivationsPage() {
   const awaiting = rows.filter((r) => r.stage === "waiting" || r.stage === "otp_verified").length;
 
   return (
-    <Container className="!px-0">
+    <section className="mt-8">
       <AutoRefresh seconds={5} />
 
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl font-bold text-brand-950">Activation Queue</h1>
-          <p className="mt-1 max-w-2xl text-sm text-brand-500">
-            Applicants who paid the $1 fee are held on a live loading screen. Send a verification code
-            or approve them — their screen follows your choice within seconds.
+          <h2 className="font-serif text-lg font-bold text-brand-950">Activation Queue</h2>
+          <p className="mt-0.5 text-sm text-brand-500">
+            Applicants wait on a live screen — send a verification code or approve them here.
           </p>
         </div>
         <Badge className="shrink-0 bg-brand-950 text-white ring-brand-950/20">
@@ -72,15 +71,12 @@ export default async function AdminActivationsPage() {
       </div>
 
       {rows.length === 0 ? (
-        <Card className="mt-6 flex flex-col items-center justify-center py-16 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-400">
-            <ShieldCheck size={24} />
-          </span>
-          <p className="mt-4 font-semibold text-brand-950">The queue is clear</p>
-          <p className="mt-1 text-sm text-brand-500">New activations will appear here the moment someone pays.</p>
+        <Card className="mt-4 flex items-center gap-3 py-5 text-sm text-brand-500">
+          <ShieldCheck size={18} className="text-brand-400" />
+          The queue is clear — new activations appear here the moment someone pays.
         </Card>
       ) : (
-        <div className="mt-6 space-y-4">
+        <div className="mt-4 space-y-4">
           {rows.map((r) => {
             const name = `${r.first_name ?? "Unknown"} ${r.last_name ?? ""}`.trim();
             return (
@@ -132,6 +128,6 @@ export default async function AdminActivationsPage() {
           })}
         </div>
       )}
-    </Container>
+    </section>
   );
 }

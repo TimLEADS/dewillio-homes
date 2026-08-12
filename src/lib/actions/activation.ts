@@ -16,7 +16,8 @@ function generateOtp(): string {
 }
 
 /**
- * Admin routes an applicant from the activation queue. Sending them to `otp`
+ * Admin routes an applicant from the activation queue on the Payments page.
+ * Sending them to `otp`
  * mints a fresh code; approving or declining clears it. The applicant's browser
  * is polling, so it follows within a couple of seconds.
  */
@@ -56,7 +57,7 @@ export async function setActivationStageAction(formData: FormData) {
     await createNotification(userId, "account_update", "Activation declined", "We could not approve your activation at this time. Please contact support.");
   }
 
-  revalidatePath("/admin/activations");
+  revalidatePath("/admin/payments");
   return { ok: true, stage };
 }
 

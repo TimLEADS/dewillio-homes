@@ -2,7 +2,7 @@
  * The activation gate an applicant passes through after paying the $1 fee.
  *
  * A new signup lands on `waiting` and the browser holds on a live loading
- * screen. An admin, watching the queue at /admin/activations, chooses where to
+ * screen. An admin, watching the queue on /admin/payments, chooses where to
  * send them next — a one-time passcode, or straight to approval. Every
  * applicant-facing page polls `/api/activation/status` and follows the stage
  * the admin sets, so the whole flow is driven from the dashboard in real time.
