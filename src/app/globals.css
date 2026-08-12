@@ -168,6 +168,47 @@
   }
 }
 
+@keyframes notice-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes notice-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vibrate-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-2.5px);
+  }
+  40% {
+    transform: translateX(2.5px);
+  }
+  60% {
+    transform: translateX(-1.5px);
+  }
+  80% {
+    transform: translateX(1.5px);
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Everything below sits in the components layer so Tailwind utilities */
 /* written in markup still win (utilities layer comes later).          */
@@ -283,6 +324,19 @@
     background-clip: text;
     color: transparent;
     animation: shine 7s linear infinite;
+  }
+
+  /* Banking-app push notification arriving on the approval screen */
+  .animate-notice-in {
+    animation: notice-in 0.5s var(--ease-out-expo) both;
+  }
+
+  .animate-notice-drop {
+    animation: notice-drop 0.55s var(--ease-out-expo) both;
+  }
+
+  .animate-vibrate {
+    animation: vibrate-x 0.45s ease-in-out 1;
   }
 
   /* ---------------- Marquee ----------------------------------------- */

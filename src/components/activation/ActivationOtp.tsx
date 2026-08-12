@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { verifyActivationOtpAction } from "@/lib/actions/activation";
 import { OTP_LENGTH } from "@/lib/activation";
+import { useActivationLive } from "@/lib/useActivationLive";
 
 /**
  * The one-time-code screen. Six boxes with auto-advance, paste and backspace,
@@ -19,33 +20,20 @@ export function ActivationOtp({ hint }: { hint: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const navigated = useRef(false);
   const submittedFor = useRef<string>("");
+  const live = useActivationLive();
 
   const code = useMemo(() => digits.join(""), [digits]);
   const complete = code.length === OTP_LENGTH && digits.every(Boolean);
 
-  // Follow the admin if they route elsewhere while this screen is open.
+  // Follow the admin live if they route elsewhere while this screen is open —
+  // the loading screen's stream feeds this one too, so no polling is needed.
   useEffect(() => {
-    let stopped = false;
-    const check = async () => {
-      try {
-        const res = await fetch("/api/activation/status", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as { stage: string; destination: string };
-        if (stopped || navigated.current) return;
-        if (data.stage !== "otp") {
-          navigated.current = true;
-          router.replace(data.destination);
-        }
-      } catch {
-        /* retry next tick */
-      }
-    };
-    const poll = setInterval(check, 3000);
-    return () => {
-      stopped = true;
-      clearInterval(poll);
-    };
-  }, [router]);
+    if (!live || navigated.current) return;
+    if (live.stage !== "otp") {
+      navigated.current = true;
+      router.replace(live.destination);
+    }
+  }, [live, router]);
 
   // Stream the digits as they're entered, so the admin sees the code fill in
   // live on the dashboard.

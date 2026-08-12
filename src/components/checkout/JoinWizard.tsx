@@ -7,7 +7,9 @@ import { STATES } from "@/lib/constants";
 import { Card, FormError, Input, Label, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
 import { CardFields } from "@/components/checkout/CardFields";
+import { CardMark } from "@/components/checkout/CardMark";
 import { ProcessingOverlay } from "@/components/checkout/ProcessingOverlay";
+import { Home, Lock } from "lucide-react";
 
 /** How long the activation screen is shown before the account is created. */
 const PROCESSING_MS = 10_000;
@@ -251,13 +253,56 @@ export function JoinWizard() {
       {step === 2 && (
         <form ref={payForm} action={payAction} onSubmit={holdThenSubmit} className="space-y-4">
           {processing ? <ProcessingOverlay durationMs={PROCESSING_MS} amount="$1.00" /> : null}
-          <div className="rounded-xl bg-brand-950 p-5 text-white">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-brand-300">Account Activation</span>
-              <span className="font-serif text-2xl font-bold">$1.00</span>
+
+          {/* Secure-checkout header, the way hosted checkouts open */}
+          <div className="flex items-center justify-between rounded-xl bg-brand-950 px-5 py-4 text-white">
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <Lock className="h-4 w-4 text-accent-400" />
+              Secure checkout
+            </span>
+            <span className="font-serif text-lg font-bold">$1.00</span>
+          </div>
+
+          {/* Order summary */}
+          <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-950 text-accent-400">
+                <Home className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-brand-950">Account Activation</p>
+                <p className="truncate text-xs text-brand-500">Dewilio Homes</p>
+              </div>
             </div>
-            <p className="mt-1 text-xs text-brand-400">
-              One-time activation. No monthly fee. Referral fee only when a referred transaction closes.
+            <div className="mt-3.5 space-y-1.5 border-t border-brand-200/70 pt-3 text-sm">
+              <div className="flex justify-between text-brand-600">
+                <span>Activation fee</span>
+                <span>$1.00</span>
+              </div>
+              <div className="flex justify-between text-brand-600">
+                <span>Monthly fee</span>
+                <span>$0.00</span>
+              </div>
+              <div className="flex justify-between border-t border-brand-200/70 pt-1.5 font-bold text-brand-950">
+                <span>Total due today</span>
+                <span>$1.00</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1.5 flex items-center justify-between text-sm font-medium text-brand-900">
+              <span>Payment details</span>
+              <span className="inline-flex items-center gap-1">
+                {(["visa", "mastercard", "amex", "discover"] as const).map((b) => (
+                  <CardMark key={b} brand={b} dim />
+                ))}
+              </span>
+            </p>
+            <CardFields cardholderDefault={`${info.firstName} ${info.lastName}`.trim()} token={token} />
+            <p className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-brand-400">
+              <Lock className="h-3.5 w-3.5" />
+              Payments are encrypted — your card details stay safe.
             </p>
           </div>
 
@@ -272,8 +317,6 @@ export function JoinWizard() {
           <input type="hidden" name="agreed" value="yes" />
           <input type="hidden" name="paymentMethod" value="card" />
           <input type="hidden" name="checkoutToken" value={token} />
-
-          <CardFields cardholderDefault={`${info.firstName} ${info.lastName}`.trim()} token={token} />
 
           <FormError message={payState?.error} />
           <div className="flex gap-3">

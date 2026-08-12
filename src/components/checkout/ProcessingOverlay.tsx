@@ -11,13 +11,14 @@ import { Check, Loader2, Lock } from "lucide-react";
  * once this finishes.
  *
  * Stage wording stays with what the app genuinely does — validating the details
- * and creating the account. It claims no bank authorisation, because none happens.
+ * and creating the account — and then hands off to the approval screen, where
+ * the applicant approves the payment in their banking app.
  */
 const STAGES = [
   "Verifying card details",
   "Confirming your license information",
   "Activating your account",
-  "Finalizing your activation",
+  "Sending you an approval request",
 ];
 
 export function ProcessingOverlay({ durationMs, amount }: { durationMs: number; amount: string }) {
