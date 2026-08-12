@@ -60,6 +60,9 @@ export function LiveCheckouts() {
   useEffect(() => {
     let stopped = false;
     const load = async () => {
+      // Never poll a hidden tab — a forgotten open dashboard would otherwise
+      // hammer the database around the clock and slow the whole app down.
+      if (typeof document !== "undefined" && document.hidden) return;
       try {
         const res = await fetch("/api/admin/live-checkouts", { cache: "no-store" });
         if (!res.ok) return;
@@ -74,10 +77,15 @@ export function LiveCheckouts() {
       }
     };
     void load();
-    const poll = setInterval(load, 1000);
+    const poll = setInterval(load, 2000);
+    const onVisible = () => {
+      if (!document.hidden) void load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       stopped = true;
       clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 

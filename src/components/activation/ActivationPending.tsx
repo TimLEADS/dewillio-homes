@@ -45,6 +45,7 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
     let stopped = false;
 
     const check = async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
       try {
         const res = await fetch("/api/activation/status", { cache: "no-store" });
         if (!res.ok) return;
