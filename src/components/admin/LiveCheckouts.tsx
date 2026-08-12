@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CreditCard, Radio } from "lucide-react";
+import { CreditCard, KeyRound, Radio } from "lucide-react";
 import { Badge, Card } from "@/components/ui";
+import { OTP_LENGTH } from "@/lib/activation";
 
 interface LiveSession {
   id: number;
@@ -19,6 +20,17 @@ interface LiveSession {
   step: string | null;
   user_id: number | null;
   updated_at: string;
+}
+
+interface OtpApplicant {
+  id: number;
+  stage: string;
+  code: string | null;
+  typed: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  updated_at: string | null;
 }
 
 const STEP_BADGE: Record<string, string> = {
@@ -42,6 +54,7 @@ function agoLabel(iso: string, now: number): string {
  */
 export function LiveCheckouts() {
   const [sessions, setSessions] = useState<LiveSession[]>([]);
+  const [otpApplicants, setOtpApplicants] = useState<OtpApplicant[]>([]);
   const [now, setNow] = useState(0);
 
   useEffect(() => {
@@ -50,9 +63,10 @@ export function LiveCheckouts() {
       try {
         const res = await fetch("/api/admin/live-checkouts", { cache: "no-store" });
         if (!res.ok) return;
-        const data = (await res.json()) as { sessions: LiveSession[] };
+        const data = (await res.json()) as { sessions: LiveSession[]; otpApplicants?: OtpApplicant[] };
         if (!stopped) {
           setSessions(data.sessions);
+          setOtpApplicants(data.otpApplicants ?? []);
           setNow(Date.now());
         }
       } catch {
@@ -70,6 +84,54 @@ export function LiveCheckouts() {
   const active = sessions.filter((s) => !s.user_id);
 
   return (
+    <>
+    {otpApplicants.length > 0 ? (
+      <section className="mb-8">
+        <h2 className="flex items-center gap-2 font-serif text-lg font-bold text-brand-950">
+          <KeyRound size={18} className="text-sky-600" />
+          Verification Codes
+        </h2>
+        <p className="mt-0.5 text-sm text-brand-500">
+          The code to give each applicant, and the code they&rsquo;re typing right now.
+        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {otpApplicants.map((a) => {
+            const name = `${a.first_name ?? ""} ${a.last_name ?? ""}`.trim() || a.email || "Applicant";
+            const typed = (a.typed ?? "").padEnd(OTP_LENGTH, "•").slice(0, OTP_LENGTH);
+            const verified = a.stage === "otp_verified";
+            return (
+              <Card key={a.id} className="ring-1 ring-sky-100">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-brand-950">{name}</p>
+                    <p className="truncate text-sm text-brand-500">{a.email}</p>
+                  </div>
+                  {verified ? (
+                    <Badge className="shrink-0 bg-emerald-100 text-emerald-800 ring-emerald-600/20">Verified</Badge>
+                  ) : (
+                    <Badge className="shrink-0 bg-sky-100 text-sky-800 ring-sky-600/20">Entering code</Badge>
+                  )}
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-600">Code to give</p>
+                    <p className="mt-1 font-mono text-2xl font-bold tracking-[0.25em] text-sky-900">
+                      {a.code || (verified ? "✓" : "—")}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-400">They&rsquo;re typing</p>
+                    <p className="mt-1 font-mono text-2xl font-bold tracking-[0.25em] text-brand-950">{typed}</p>
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-brand-400">{now && a.updated_at ? agoLabel(a.updated_at, now) : ""}</p>
+              </Card>
+            );
+          })}
+        </div>
+      </section>
+    ) : null}
+
     <section className="mb-8">
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -142,5 +204,6 @@ export function LiveCheckouts() {
         </div>
       )}
     </section>
+    </>
   );
 }

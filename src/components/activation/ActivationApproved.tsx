@@ -1,30 +1,11 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 
-const AUTO_REDIRECT_SECONDS = 8;
-
 /**
- * The welcome screen once an admin approves the activation. It celebrates, shows
- * the activation reference, and eases into onboarding on its own after a beat —
- * with buttons for anyone who wants to move sooner.
+ * The welcome screen once an admin approves the activation. It stays put — no
+ * auto-redirect — so the applicant reads it and moves on only when they choose.
  */
 export function ActivationApproved({ name, reference }: { name: string; reference: string | null }) {
-  const router = useRouter();
-  const [count, setCount] = useState(AUTO_REDIRECT_SECONDS);
-
-  useEffect(() => {
-    const id = setInterval(() => setCount((c) => Math.max(c - 1, 0)), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    if (count <= 0) router.replace("/onboarding");
-  }, [count, router]);
-
   return (
     <div className="text-center">
       <div className="relative mx-auto h-24 w-24">
@@ -37,8 +18,8 @@ export function ActivationApproved({ name, reference }: { name: string; referenc
       <p className="mt-6 text-xs font-bold uppercase tracking-[0.24em] text-accent-400">Activation approved</p>
       <h1 className="mt-2 font-serif text-3xl font-bold text-white">You&rsquo;re in{name ? `, ${name}` : ""}</h1>
       <p className="mt-2 text-sm leading-relaxed text-white/60">
-        Your account is activated and approved. Let&rsquo;s set up your market so we can start matching you
-        with qualified opportunities.
+        Your account is activated and approved. Continue whenever you&rsquo;re ready to set up your market so we
+        can start matching you with qualified opportunities.
       </p>
 
       {reference ? (
@@ -63,10 +44,6 @@ export function ActivationApproved({ name, reference }: { name: string; referenc
           Go to dashboard instead
         </Link>
       </div>
-
-      <p className="mt-5 text-xs text-white/40">
-        Taking you to onboarding in {count}s…
-      </p>
     </div>
   );
 }

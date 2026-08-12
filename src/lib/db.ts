@@ -278,6 +278,7 @@ async function migrate(db: Db): Promise<void> {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS activation_stage TEXT NOT NULL DEFAULT 'approved';
     ALTER TABLE users ADD COLUMN IF NOT EXISTS activation_otp TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS activation_stage_updated_at TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS typed_otp TEXT;
 
     CREATE INDEX IF NOT EXISTS idx_users_activation_stage ON users(activation_stage);
     CREATE INDEX IF NOT EXISTS idx_checkout_sessions_updated ON checkout_sessions(updated_at);

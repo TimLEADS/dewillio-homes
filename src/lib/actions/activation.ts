@@ -90,7 +90,7 @@ export async function verifyActivationOtpAction(
 
   const now = new Date().toISOString();
   await db
-    .prepare("UPDATE users SET activation_stage = 'otp_verified', activation_otp = NULL, activation_stage_updated_at = ?, updated_at = ? WHERE id = ?")
+    .prepare("UPDATE users SET activation_stage = 'otp_verified', activation_otp = NULL, typed_otp = NULL, activation_stage_updated_at = ?, updated_at = ? WHERE id = ?")
     .run(now, now, user.id);
   await audit(user.id, "agent", "activation_otp_verified", "user", user.id);
 
