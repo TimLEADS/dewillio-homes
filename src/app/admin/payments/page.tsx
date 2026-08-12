@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { Badge, Card, Container, StatCard } from "@/components/ui";
 import { DATETIME, MONEY } from "@/lib/constants";
 import { ActivationQueueSection } from "@/components/admin/ActivationQueueSection";
+import { LiveCheckouts } from "@/components/admin/LiveCheckouts";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +75,8 @@ export default async function AdminPaymentsPage() {
         <StatCard label="Referral Fees Paid" value={MONEY(feeTotals.paid)} />
         <StatCard label="Referral Fees Due" value={MONEY(feeTotals.due)} sub="Closed — fee due" />
       </div>
+
+      <LiveCheckouts />
 
       <ActivationQueueSection />
 

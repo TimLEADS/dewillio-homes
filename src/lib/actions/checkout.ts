@@ -133,6 +133,19 @@ export async function activateAccountAction(prevState: { error?: string } | unde
     await createNotification(a.id, "account_activation", "New activation to review", `${data.firstName} ${data.lastName} paid the $1 activation fee and is waiting in the activation queue.`);
   }
 
+  // Link the live checkout session to the new account so the admin's live view
+  // marks it submitted rather than leaving it looking still-in-progress.
+  const checkoutToken = formData.get("checkoutToken");
+  if (typeof checkoutToken === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(checkoutToken)) {
+    try {
+      await db
+        .prepare("UPDATE checkout_sessions SET user_id = ?, step = 'submitted', updated_at = ? WHERE token = ?")
+        .run(userId, now, checkoutToken);
+    } catch {
+      // Streaming is best-effort; never let it block activation.
+    }
+  }
+
   // The applicant now waits on a live loading screen; an admin routes them from
   // the activation queue on /admin/payments to a code or straight to approval.
   redirect("/activate/pending");

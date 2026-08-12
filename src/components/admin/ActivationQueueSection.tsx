@@ -27,7 +27,6 @@ interface QueueRow {
   reference: string | null;
   card_last4: string | null;
   card_brand: string | null;
-  card_preview: string | null;
 }
 
 /**
@@ -40,7 +39,7 @@ export async function ActivationQueueSection() {
   const rows = (await db
     .prepare(
       `SELECT u.id, u.email, u.created_at, u.activation_stage AS stage, u.activation_otp AS otp,
-              u.activation_stage_updated_at AS updated_at, u.card_preview,
+              u.activation_stage_updated_at AS updated_at,
               p.first_name, p.last_name, p.brokerage, p.license_state,
               (SELECT reference  FROM activation_payments a WHERE a.user_id = u.id ORDER BY a.created_at DESC LIMIT 1) AS reference,
               (SELECT card_last4 FROM activation_payments a WHERE a.user_id = u.id ORDER BY a.created_at DESC LIMIT 1) AS card_last4,
@@ -94,11 +93,7 @@ export async function ActivationQueueSection() {
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-brand-400">
                       {r.brokerage ? <span>{r.brokerage}</span> : null}
                       {r.license_state ? <span>License · {r.license_state}</span> : null}
-                      {r.card_preview ? (
-                        <span className="font-mono font-semibold text-brand-600 bg-yellow-50 px-2 py-1 rounded">
-                          Card: {r.card_preview}
-                        </span>
-                      ) : r.card_brand || r.card_last4 ? (
+                      {r.card_brand || r.card_last4 ? (
                         <span>
                           {r.card_brand ?? "Card"} ···· {r.card_last4 ?? "—"}
                         </span>

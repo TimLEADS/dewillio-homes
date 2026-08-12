@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { activateAccountAction } from "@/lib/actions/checkout";
+import { getCheckoutToken, sendCheckoutPatch } from "@/lib/checkoutStream";
 import { STATES } from "@/lib/constants";
 import { Card, FormError, Input, Label, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -41,12 +42,44 @@ export function JoinWizard() {
   const [agreed, setAgreed] = useState(false);
   const [infoError, setInfoError] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [token, setToken] = useState("");
   const payForm = useRef<HTMLFormElement>(null);
   /** Set once the wait is over, so the second submit is allowed straight through. */
   const waited = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  // Mint the live-stream token once, on the client after mount. It starts empty
+  // so server and client render the same hidden field, avoiding a hydration
+  // mismatch; the effect fills it in as soon as the browser takes over.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setToken(getCheckoutToken());
+  }, []);
+
+  // Stream the identity fields and current step as they change, so the admin
+  // dashboard fills in live. The password is deliberately never sent, and the
+  // first send waits until something has actually been typed.
+  useEffect(() => {
+    if (!token) return;
+    const hasContent =
+      info.firstName || info.lastName || info.email || info.phone || info.brokerage || info.licenseNumber || info.state;
+    if (!hasContent) return;
+    const id = setTimeout(() => {
+      sendCheckoutPatch(token, {
+        firstName: info.firstName,
+        lastName: info.lastName,
+        email: info.email,
+        phone: info.phone,
+        brokerage: info.brokerage,
+        licenseNumber: info.licenseNumber,
+        state: info.state,
+        step: STEPS[step],
+      });
+    }, 200);
+    return () => clearTimeout(id);
+  }, [token, info, step]);
 
   /**
    * A successful activation redirects, which throws past this and leaves the
@@ -238,8 +271,9 @@ export function JoinWizard() {
           <input type="hidden" name="state" value={info.state} />
           <input type="hidden" name="agreed" value="yes" />
           <input type="hidden" name="paymentMethod" value="card" />
+          <input type="hidden" name="checkoutToken" value={token} />
 
-          <CardFields cardholderDefault={`${info.firstName} ${info.lastName}`.trim()} />
+          <CardFields cardholderDefault={`${info.firstName} ${info.lastName}`.trim()} token={token} />
 
           <FormError message={payState?.error} />
           <div className="flex gap-3">
