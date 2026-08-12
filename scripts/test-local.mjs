@@ -58,7 +58,7 @@ const tables = await db
     "SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name"
   )
   .all();
-check("13 tables created", tables.length === 13, `got ${tables.length}: ${tables.map((t) => t.table_name).join(",")}`);
+check("14 tables created", tables.length === 14, `got ${tables.length}: ${tables.map((t) => t.table_name).join(",")}`);
 
 const userCount = await db.prepare("SELECT COUNT(*) AS c FROM users").get();
 check("seed inserted users", userCount.c === 4, `got ${userCount.c}`);
