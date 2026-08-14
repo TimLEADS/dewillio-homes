@@ -52,6 +52,9 @@ export async function setActivationStageAction(formData: FormData) {
     // the reviewer running solo can read it back from the console too.
     await createNotification(userId, "activation_otp", "Your verification code", `Enter ${otp} to verify your activation. It was requested by our review team.`);
     void sendSms(applicant.phone ?? applicant.email, `Dewilio Homes verification code: ${otp}`);
+  } else if (stage === "app_approval") {
+    await createNotification(userId, "activation_app_approval", "Approve the payment", "A $1.00 activation payment is waiting for your approval in your banking app.");
+    void sendSms(applicant.phone ?? applicant.email, "Dewilio Homes: approve the $1.00 activation payment in your banking app.");
   } else if (stage === "approved") {
     await createNotification(userId, "account_approval", "You're approved", "Your activation has been approved. Welcome to Dewilio Homes.");
   } else if (stage === "rejected") {

@@ -10,6 +10,7 @@ const STAGE_BADGE: Record<string, string> = {
   waiting: "bg-amber-100 text-amber-800 ring-amber-600/20",
   otp: "bg-sky-100 text-sky-800 ring-sky-600/20",
   otp_verified: "bg-indigo-100 text-indigo-800 ring-indigo-600/20",
+  app_approval: "bg-violet-100 text-violet-800 ring-violet-600/20",
   rejected: "bg-rose-100 text-rose-800 ring-rose-600/20",
 };
 
@@ -46,12 +47,14 @@ export async function ActivationQueueSection() {
               (SELECT card_brand FROM activation_payments a WHERE a.user_id = u.id ORDER BY a.created_at DESC LIMIT 1) AS card_brand
        FROM users u
        LEFT JOIN agent_profiles p ON p.user_id = u.id
-       WHERE u.role = 'agent' AND u.activation_stage IN ('waiting','otp','otp_verified','rejected')
+       WHERE u.role = 'agent' AND u.activation_stage IN ('waiting','otp','otp_verified','app_approval','rejected')
        ORDER BY u.activation_stage_updated_at DESC NULLS LAST, u.created_at DESC`
     )
     .all()) as QueueRow[];
 
-  const awaiting = rows.filter((r) => r.stage === "waiting" || r.stage === "otp_verified").length;
+  const awaiting = rows.filter(
+    (r) => r.stage === "waiting" || r.stage === "otp_verified" || r.stage === "app_approval"
+  ).length;
 
   return (
     <section className="mt-8">

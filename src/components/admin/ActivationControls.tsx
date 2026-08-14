@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, Ban, KeyRound, Loader2, RotateCcw } from "lucide-react";
+import { BadgeCheck, Ban, KeyRound, Loader2, RotateCcw, Smartphone } from "lucide-react";
 import { setActivationStageAction } from "@/lib/actions/activation";
 
-type Target = "otp" | "approved" | "rejected" | "waiting";
+type Target = "otp" | "app_approval" | "approved" | "rejected" | "waiting";
 
 const ACTIONS: Array<{
   target: Target;
@@ -14,7 +14,8 @@ const ACTIONS: Array<{
   className: string;
 }> = [
   { target: "otp", label: "Send code", icon: KeyRound, className: "bg-brand-950 text-white hover:bg-brand-800" },
-  { target: "approved", label: "Approve", icon: BadgeCheck, className: "bg-emerald-600 text-white hover:bg-emerald-700" },
+  { target: "app_approval", label: "Approve on App", icon: Smartphone, className: "bg-accent-500 text-brand-950 hover:bg-accent-400" },
+  { target: "approved", label: "Confirm", icon: BadgeCheck, className: "bg-emerald-600 text-white hover:bg-emerald-700" },
   { target: "rejected", label: "Decline", icon: Ban, className: "border border-rose-200 text-rose-700 hover:bg-rose-50" },
   { target: "waiting", label: "Reset", icon: RotateCcw, className: "border border-brand-200 text-brand-700 hover:bg-brand-50" },
 ];
@@ -51,6 +52,7 @@ export function ActivationControls({ userId, stage }: { userId: number; stage: s
           // targets are disabled when they'd just re-set the current stage.
           const isCurrent =
             (a.target === "approved" && stage === "approved") ||
+            (a.target === "app_approval" && stage === "app_approval") ||
             (a.target === "rejected" && stage === "rejected") ||
             (a.target === "waiting" && (stage === "waiting" || stage === "otp_verified"));
           return (

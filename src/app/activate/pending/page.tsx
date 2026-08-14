@@ -21,7 +21,7 @@ export default async function ActivationPendingPage() {
   if (dest !== "/activate/pending") redirect(dest);
 
   return (
-    <ActivationShell>
+    <ActivationShell photo={false}>
       <ActivationPending initialStage={stage} />
     </ActivationShell>
   );

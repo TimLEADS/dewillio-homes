@@ -15,6 +15,33 @@ const STEPS = [
 /** Length of the phone-vibrating "your bank just pushed you" moment before the redirect. */
 const NOTICE_MS = 3200;
 
+/** Stages that arrive as a push notification on the phone mockup. */
+const NOTICE_STAGES = ["otp", "approved", "app_approval"];
+
+const NOTICE_COPY: Record<string, { screen: string; push: string; action: string; title: string; body: string }> = {
+  otp: {
+    screen: "Verification code sent",
+    push: "Dewilio Homes is requesting $1.00",
+    action: "Open code screen",
+    title: "Code sent",
+    body: "A verification code is waiting for you. We’re taking you to the code screen.",
+  },
+  approved: {
+    screen: "Payment approved",
+    push: "Dewilio Homes approved $1.00",
+    action: "Approve",
+    title: "Payment approved",
+    body: "Your activation payment went through. We’re taking you to your account.",
+  },
+  app_approval: {
+    screen: "Approval requested",
+    push: "Dewilio Homes is requesting $1.00",
+    action: "Approve",
+    title: "Approve the payment",
+    body: "Open your banking app and approve the $1.00 activation payment to continue.",
+  },
+};
+
 /** Which step is spinning for a given stage; earlier steps render as done. */
 function activeStep(stage: string): number {
   if (stage === "otp_verified") return 2;
@@ -49,16 +76,22 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
 
   // The live stream. A decision from the dashboard plays as the bank-push
   // moment below before the page turns over; intermediate stages render as-is.
-  // All display state is derived from `live`, so none is written back.
-  const notice = live && (live.stage === "otp" || live.stage === "approved") ? live : null;
+  // `played` only records that a push already ran, so it can't loop.
+  const [played, setPlayed] = useState<string | null>(null);
+  const notice = live && NOTICE_STAGES.includes(live.stage) && live.stage !== played ? live : null;
   useEffect(() => {
-    if (live && (live.stage === "otp" || live.stage === "approved")) navigated.current = true;
+    if (live && NOTICE_STAGES.includes(live.stage)) navigated.current = true;
   }, [live]);
 
-  // Let the push notification play out, then follow the destination.
+  // Let the push notification play out, then follow the destination. The
+  // app-approval push lands on this very page, so it settles into the approval
+  // screen below instead of navigating to where we already are.
   useEffect(() => {
     if (!notice) return;
-    const timer = setTimeout(() => router.replace(notice.destination), NOTICE_MS);
+    const timer = setTimeout(() => {
+      if (notice.stage === "app_approval") setPlayed("app_approval");
+      else router.replace(notice.destination);
+    }, NOTICE_MS);
     return () => clearTimeout(timer);
   }, [notice, router]);
 
@@ -96,6 +129,7 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
   // The banking-app moment: the phone buzzes and the push notification lands.
   if (notice) {
     const approved = notice.stage === "approved";
+    const copy = NOTICE_COPY[notice.stage];
     return (
       <div>
         <div className="animate-notice-in mx-auto w-[15rem]">
@@ -112,9 +146,7 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
               </div>
               <div className="px-4 pb-3 pt-1.5 text-center">
                 <p className="text-[11px] font-semibold text-brand-400">Your banking app</p>
-                <p className="text-sm font-bold text-brand-950">
-                  {approved ? "Payment approved" : "Verification code sent"}
-                </p>
+                <p className="text-sm font-bold text-brand-950">{copy.screen}</p>
               </div>
 
               {/* The push notification, sliding down over the app */}
@@ -125,9 +157,7 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
                   </span>
                   <div className="min-w-0 flex-1 text-left">
                     <p className="text-[10px] font-bold text-brand-500">Payment approval</p>
-                    <p className="text-xs font-bold leading-snug text-brand-950">
-                      {approved ? "Dewilio Homes approved $1.00" : "Dewilio Homes is requesting $1.00"}
-                    </p>
+                    <p className="text-xs font-bold leading-snug text-brand-950">{copy.push}</p>
                     <p className="mt-0.5 text-[10px] text-brand-400">Tap to open your banking app</p>
                   </div>
                 </div>
@@ -138,7 +168,7 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
                       approved ? "bg-emerald-600" : "bg-brand-950"
                     }`}
                   >
-                    {approved ? "Approve" : "Open code screen"}
+                    {copy.action}
                   </button>
                   <button
                     type="button"
@@ -152,18 +182,12 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
           </div>
         </div>
 
-        <p className="mt-6 font-display text-3xl font-bold leading-snug text-brand-950">
-          {approved ? "Payment approved" : "Code sent"}
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-brand-600">
-          {approved
-            ? "Your activation payment went through. We’re taking you to your account."
-            : "A verification code is waiting for you. We’re taking you to the code screen."}
-        </p>
+        <p className="mt-6 font-display text-3xl font-bold leading-snug text-brand-950">{copy.title}</p>
+        <p className="mt-2 text-sm leading-relaxed text-brand-600">{copy.body}</p>
 
         <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50/60 px-3.5 py-1.5 text-xs font-medium text-brand-700">
           <Loader2 className="h-3.5 w-3.5 animate-spin text-accent-600" />
-          Redirecting you…
+          {notice.stage === "app_approval" ? "Waiting for your approval…" : "Redirecting you…"}
         </div>
 
         <div className="mt-8 flex items-center justify-between border-t border-brand-100 pt-4 text-xs text-brand-400">
@@ -225,7 +249,7 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
       </p>
 
       {/* The request as the banking app would list it */}
-      <div className="mt-6 w-full max-w-[17rem] rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-left text-sm">
+      <div className="mt-6 w-full rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-left text-sm">
         <div className="flex items-center justify-between gap-3">
           <span className="truncate text-brand-500">Dewilio Homes</span>
           <span className="shrink-0 font-semibold text-brand-900">$1.00</span>
