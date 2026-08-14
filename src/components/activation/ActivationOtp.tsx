@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { verifyActivationOtpAction } from "@/lib/actions/activation";
 import { OTP_LENGTH } from "@/lib/activation";
 import { useActivationLive } from "@/lib/useActivationLive";
@@ -97,19 +97,19 @@ export function ActivationOtp({ hint }: { hint: string }) {
   };
 
   return (
-    <div className="text-center">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-accent-400 ring-1 ring-white/15">
-        <ShieldCheck size={30} strokeWidth={2} />
-      </div>
-      <h1 className="mt-6 font-serif text-2xl font-bold text-white">Verify it&rsquo;s you</h1>
-      <p className="mt-2 text-sm leading-relaxed text-white/60">
-        Enter the {OTP_LENGTH}-digit code issued for <span className="font-medium text-white/80">{hint}</span> to
-        continue your activation.
+    <div>
+      <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-accent-600">
+        Secure verification
+      </p>
+      <h1 className="mt-3 font-display text-3xl font-bold text-brand-950">Verify it&rsquo;s you</h1>
+      <p className="mt-2 mb-8 text-sm leading-relaxed text-brand-600">
+        Enter the {OTP_LENGTH}-digit code issued for{" "}
+        <span className="font-semibold text-brand-900">{hint}</span> to continue your activation.
       </p>
 
-      <form ref={formRef} action={action} className="mt-7">
+      <form ref={formRef} action={action}>
         <input type="hidden" name="code" value={code} />
-        <div className="flex justify-center gap-2 sm:gap-2.5">
+        <div className="flex gap-2 sm:gap-2.5">
           {digits.map((d, i) => (
             <input
               key={i}
@@ -125,23 +125,25 @@ export function ActivationOtp({ hint }: { hint: string }) {
               maxLength={OTP_LENGTH}
               aria-label={`Digit ${i + 1}`}
               autoFocus={i === 0}
-              className={`h-14 w-11 rounded-xl border bg-white/5 text-center font-mono text-xl font-semibold text-white outline-none transition-colors sm:w-12 ${
-                state?.error ? "border-rose-400/60" : d ? "border-accent-400/70" : "border-white/15"
-              } focus:border-accent-400 focus:ring-4 focus:ring-accent-400/15`}
+              className={`h-14 w-11 rounded-xl border bg-white text-center font-mono text-xl font-semibold text-brand-950 outline-none transition-colors sm:w-12 ${
+                state?.error ? "border-rose-400" : d ? "border-accent-500" : "border-brand-200"
+              } focus:border-accent-500 focus:ring-4 focus:ring-accent-500/15`}
             />
           ))}
         </div>
 
         {state?.error ? (
-          <p className="mt-4 text-sm font-medium text-rose-300">{state.error}</p>
+          <p className="mt-4 text-sm font-medium text-rose-600">{state.error}</p>
         ) : (
-          <p className="mt-4 text-xs text-white/40">Waiting on a code? Your reviewer can issue a new one.</p>
+          <p className="mt-4 text-xs text-brand-400">
+            Waiting on a code? Your reviewer can issue a new one.
+          </p>
         )}
 
         <button
           type="submit"
           disabled={!complete || pending}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-accent-500 px-4 py-3.5 text-sm font-bold text-brand-950 transition-colors hover:bg-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-brand-950 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? (
             <>

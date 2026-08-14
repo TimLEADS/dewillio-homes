@@ -66,23 +66,26 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
 
   if (stage === "rejected") {
     return (
-      <div className="text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-300 ring-1 ring-rose-400/30">
+      <div>
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-200">
           <ShieldAlert size={30} />
         </div>
-        <h1 className="mt-6 font-serif text-2xl font-bold text-white">Activation declined</h1>
-        <p className="mt-2 text-sm leading-relaxed text-white/60">
+        <h1 className="mt-6 font-display text-3xl font-bold text-brand-950">Activation declined</h1>
+        <p className="mt-2 text-sm leading-relaxed text-brand-600">
           We weren&rsquo;t able to approve this activation. If you believe this is a mistake, our team
           can take another look.
         </p>
         <div className="mt-7 flex flex-col gap-2.5">
           <a
             href="mailto:support@dewillio.com"
-            className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-brand-950 transition-colors hover:bg-white/90"
+            className="rounded-lg bg-brand-950 px-4 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-brand-800"
           >
             Contact support
           </a>
-          <Link href="/" className="rounded-xl px-4 py-3 text-sm font-semibold text-white/70 hover:text-white">
+          <Link
+            href="/"
+            className="rounded-lg px-4 py-3 text-center text-sm font-semibold text-brand-600 transition-colors hover:text-brand-950"
+          >
             Back to homepage
           </Link>
         </div>
@@ -94,9 +97,9 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
   if (notice) {
     const approved = notice.stage === "approved";
     return (
-      <div className="text-center">
+      <div>
         <div className="animate-notice-in mx-auto w-[15rem]">
-          <div className="animate-vibrate overflow-hidden rounded-[2rem] border-[6px] border-brand-900 bg-brand-975 p-2 shadow-2xl shadow-black/40">
+          <div className="animate-vibrate overflow-hidden rounded-[2rem] border-[6px] border-brand-900 bg-brand-975 p-2 shadow-2xl shadow-brand-950/25">
             <div className="overflow-hidden rounded-[1.45rem] bg-white">
               {/* Status bar, so it reads as a phone screen */}
               <div className="flex items-center justify-between px-4 pb-1 pt-3 text-[10px] font-semibold text-brand-950">
@@ -149,21 +152,21 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
           </div>
         </div>
 
-        <p className="mt-6 font-serif text-2xl font-bold leading-snug text-white">
+        <p className="mt-6 font-display text-3xl font-bold leading-snug text-brand-950">
           {approved ? "Payment approved" : "Code sent"}
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-white/60">
+        <p className="mt-2 text-sm leading-relaxed text-brand-600">
           {approved
-            ? "Your activation payment went through. We&rsquo;re taking you to your account."
-            : "A verification code is waiting for you. We&rsquo;re taking you to the code screen."}
+            ? "Your activation payment went through. We’re taking you to your account."
+            : "A verification code is waiting for you. We’re taking you to the code screen."}
         </p>
 
-        <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-white/80">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-accent-400" />
+        <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50/60 px-3.5 py-1.5 text-xs font-medium text-brand-700">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-accent-600" />
           Redirecting you…
         </div>
 
-        <div className="mt-8 flex items-center justify-between border-t border-white/10 pt-4 text-xs text-white/45">
+        <div className="mt-8 flex items-center justify-between border-t border-brand-100 pt-4 text-xs text-brand-400">
           <span className="flex items-center gap-1.5">
             <Smartphone className="h-3.5 w-3.5" />
             Done in your banking app
@@ -178,14 +181,14 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
   const verified = stage === "otp_verified";
 
   return (
-    <div className="text-center">
+    <div>
       {/* Phone with a pinging approval-request bubble — the payment waiting in
           the banking app. Goes solid green once the request is approved. */}
-      <div className="relative mx-auto h-24 w-28">
+      <div className="relative h-24 w-28">
         <span className="ping-dot absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-500/15" />
         <Smartphone
           className={`relative mx-auto h-24 w-16 transition-colors duration-700 ${
-            verified ? "text-emerald-300" : "text-white/85"
+            verified ? "text-emerald-500" : "text-brand-300"
           }`}
           strokeWidth={1.3}
         />
@@ -203,10 +206,10 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
         </span>
       </div>
 
-      <h1 className="mt-6 font-serif text-2xl font-bold leading-snug text-white">
+      <h1 className="mt-6 font-display text-3xl font-bold leading-snug text-brand-950">
         {verified ? "Payment approved" : "Check your banking app"}
       </h1>
-      <p className="mt-2 text-sm leading-relaxed text-white/60">
+      <p className="mt-2 text-sm leading-relaxed text-brand-600">
         {verified ? (
           <>
             The payment is approved. We&rsquo;re completing the final steps — this takes just a
@@ -214,29 +217,29 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
           </>
         ) : (
           <>
-            Go to your banking app and <span className="font-medium text-white/85">approve the payment</span>.
-            It shows up as a notification with the amount and merchant name, and this page updates
-            automatically.
+            Go to your banking app and{" "}
+            <span className="font-semibold text-brand-900">approve the payment</span>. It shows up as
+            a notification with the amount and merchant name, and this page updates automatically.
           </>
         )}
       </p>
 
       {/* The request as the banking app would list it */}
-      <div className="mx-auto mt-6 w-full max-w-[17rem] rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm">
+      <div className="mt-6 w-full max-w-[17rem] rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-left text-sm">
         <div className="flex items-center justify-between gap-3">
-          <span className="truncate text-white/55">Dewilio Homes</span>
-          <span className="shrink-0 font-semibold text-white/90">$1.00</span>
+          <span className="truncate text-brand-500">Dewilio Homes</span>
+          <span className="shrink-0 font-semibold text-brand-900">$1.00</span>
         </div>
-        <div className="mt-1 text-xs text-white/40">Account activation · pending approval</div>
+        <div className="mt-1 text-xs text-brand-400">Account activation · pending approval</div>
       </div>
 
-      <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-white/80">
-        <span className="ping-dot h-1.5 w-1.5 rounded-full bg-accent-400" />
+      <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50/60 px-3.5 py-1.5 text-xs font-medium text-brand-700">
+        <span className="ping-dot h-1.5 w-1.5 rounded-full bg-accent-500" />
         {verified ? "Approved — final approval in progress" : "Waiting for you to approve the payment"}
       </div>
 
       {/* Indeterminate shimmer — the wait is genuinely open-ended */}
-      <div className="relative mt-7 h-1 w-full overflow-hidden rounded-full bg-white/10">
+      <div className="relative mt-7 h-1 w-full overflow-hidden rounded-full bg-brand-100">
         <span className="animate-shimmer absolute inset-y-0 left-0 w-1/2 rounded-full" />
       </div>
 
@@ -244,22 +247,22 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
         {STEPS.map((step, i) => (
           <li key={step.key} className="flex items-center gap-3 text-sm">
             {i < active ? (
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                 <Check className="h-3.5 w-3.5" strokeWidth={3} />
               </span>
             ) : i === active ? (
               <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                <Loader2 className="h-4 w-4 animate-spin text-accent-400" />
+                <Loader2 className="h-4 w-4 animate-spin text-accent-600" />
               </span>
             ) : (
-              <span className="h-5 w-5 shrink-0 rounded-full border border-white/20" />
+              <span className="h-5 w-5 shrink-0 rounded-full border border-brand-200" />
             )}
-            <span className={i <= active ? "text-white/90" : "text-white/40"}>{step.label}</span>
+            <span className={i <= active ? "text-brand-800" : "text-brand-400"}>{step.label}</span>
           </li>
         ))}
       </ul>
 
-      <div className="mt-8 flex items-center justify-between border-t border-white/10 pt-4 text-xs text-white/45">
+      <div className="mt-8 flex items-center justify-between border-t border-brand-100 pt-4 text-xs text-brand-400">
         <span className="flex items-center gap-1.5">
           <Lock className="h-3.5 w-3.5" />
           Keep this window open
