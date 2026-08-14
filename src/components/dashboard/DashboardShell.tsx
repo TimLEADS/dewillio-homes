@@ -9,14 +9,12 @@ import {
   FileText,
   CreditCard,
   Gavel,
-  Handshake,
   Home,
   LayoutDashboard,
   LogOut,
   Menu,
   Receipt,
   Settings,
-  ShieldCheck,
   User,
   Users,
   X,
@@ -40,16 +38,8 @@ const AGENT_NAV: NavItem[] = [
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
-  { href: "/admin/agents", label: "Agents", icon: Users },
-  { href: "/admin/leads", label: "Leads", icon: Handshake },
-  { href: "/admin/appointments", label: "Appointments", icon: CalendarDays },
-  { href: "/admin/zipcodes", label: "ZIP Codes", icon: Home },
-  { href: "/admin/transactions", label: "Transactions", icon: Gavel },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
-  { href: "/admin/agreements", label: "Agreements", icon: FileText },
-  { href: "/admin/reports", label: "Reports", icon: Receipt },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
-  { href: "/admin/audit", label: "Audit Log", icon: ShieldCheck },
 ];
 
 export function DashboardShell({

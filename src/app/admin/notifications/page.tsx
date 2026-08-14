@@ -21,7 +21,7 @@ export default async function AdminNotificationsPage() {
     <Container className="!px-0">
       <h1 className="font-serif text-2xl font-bold text-brand-950">Notifications</h1>
       <p className="mt-1 text-sm text-brand-500">
-        Platform notifications. Send targeted messages from an agent&apos;s profile page.
+        Platform notifications, including new activations and verification updates.
       </p>
 
       <Card className="mt-6">

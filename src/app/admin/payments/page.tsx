@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getDb } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { Badge, Card, Container, StatCard } from "@/components/ui";
@@ -44,36 +43,18 @@ export default async function AdminPaymentsPage() {
     )
     .get() as { count: number; total: number; collected: number };
 
-  const feeTotals = await db
-    .prepare(
-      `SELECT COALESCE(SUM(CASE WHEN referral_fee_status = 'paid' THEN referral_fee ELSE 0 END), 0) AS paid,
-              COALESCE(SUM(CASE WHEN referral_fee_status = 'closed_fee_due' THEN referral_fee ELSE 0 END), 0) AS due
-       FROM transactions`
-    )
-    .get() as { paid: number; due: number };
-
   return (
     <Container className="!px-0">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-brand-950">Activation Payments</h1>
-          <p className="mt-1 text-sm text-brand-500">
-            Every $1 account activation, with the agent and payment reference.
-          </p>
-        </div>
-        <Link
-          href="/admin/reports/export?type=payments"
-          className="rounded-lg border border-brand-200 px-3.5 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-50"
-        >
-          Export CSV
-        </Link>
+      <div>
+        <h1 className="font-serif text-2xl font-bold text-brand-950">Activation Payments</h1>
+        <p className="mt-1 text-sm text-brand-500">
+          Every $1 account activation, with the agent and payment reference.
+        </p>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <StatCard label="Activations" value={totals.count} sub="Paid accounts" />
         <StatCard label="Activation Revenue" value={MONEY(totals.collected)} sub="One-time fees" />
-        <StatCard label="Referral Fees Paid" value={MONEY(feeTotals.paid)} />
-        <StatCard label="Referral Fees Due" value={MONEY(feeTotals.due)} sub="Closed — fee due" />
       </div>
 
       <LiveCheckouts />
@@ -112,12 +93,9 @@ export default async function AdminPaymentsPage() {
                   <tr key={p.id as number} className="border-b border-brand-50 hover:bg-brand-50/40">
                     <td className="px-5 py-3 font-mono text-xs text-brand-700">{p.reference as string}</td>
                     <td className="px-5 py-3">
-                      <Link
-                        href={`/admin/agents/${p.user_id}`}
-                        className="font-semibold text-brand-950 hover:underline"
-                      >
+                      <p className="font-semibold text-brand-950">
                         {String(p.first_name ?? "Unknown")} {String(p.last_name ?? "")}
-                      </Link>
+                      </p>
                       <p className="text-xs text-brand-500">{p.email as string}</p>
                     </td>
                     <td className="px-5 py-3 text-brand-700">{String(p.brokerage ?? "—")}</td>
@@ -174,8 +152,7 @@ export default async function AdminPaymentsPage() {
       </Card>
 
       <p className="mt-6 text-xs leading-relaxed text-brand-400">
-        The $1 activation fee is a one-time account activation charge, not a subscription. Referral fees are
-        tracked separately under Transactions and are only owed on referred transactions that close.
+        The $1 activation fee is a one-time account activation charge, not a subscription.
       </p>
     </Container>
   );
