@@ -5,6 +5,15 @@ import { subscribeToActivation } from "@/lib/activationBus";
 
 export const dynamic = "force-dynamic";
 
+// Cap the function so a stream can never run to the platform's hard limit and
+// return FUNCTION_INVOCATION_TIMEOUT (504). We self-close well inside this.
+export const maxDuration = 60;
+
+/** Close each stream after this long and let EventSource reconnect. Must stay
+ *  comfortably below `maxDuration` so the function returns cleanly rather than
+ *  being killed by the platform. */
+const STREAM_TTL_MS = 25000;
+
 /**
  * Server-Sent Events stream of the applicant's activation stage. The browser
  * subscribes once and is pushed the instant an admin routes them from the
@@ -14,6 +23,11 @@ export const dynamic = "force-dynamic";
  * serverless fleet the in-process bus can't see a decision made on another
  * instance, so this guarantees the decision still arrives within seconds
  * anywhere. Between events the socket costs nothing.
+ *
+ * Each connection lives at most `STREAM_TTL_MS` and then closes itself; the
+ * browser's EventSource reconnects transparently. That keeps every invocation
+ * short-lived on serverless — a stream can't pin a function (or its pooled DB
+ * connection) open until the platform times it out.
  */
 export async function GET() {
   const user = await getSessionUser();
@@ -61,9 +75,25 @@ export async function GET() {
         }
       }, 15000);
 
+      // Retire the stream before the platform's function limit. The browser
+      // reconnects on its own, and the 15s poll in useActivationLive covers the
+      // gap, so the applicant never notices the handover.
+      const retire = setTimeout(() => {
+        cleanup?.();
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
+      }, STREAM_TTL_MS);
+
+      let done = false;
       cleanup = () => {
+        if (done) return;
+        done = true;
         clearInterval(keepAlive);
         clearInterval(fallback);
+        clearTimeout(retire);
         unsubscribe();
       };
     },
