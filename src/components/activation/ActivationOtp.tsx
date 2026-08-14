@@ -125,7 +125,7 @@ export function ActivationOtp({ hint }: { hint: string }) {
               maxLength={OTP_LENGTH}
               aria-label={`Digit ${i + 1}`}
               autoFocus={i === 0}
-              className={`h-14 w-11 rounded-xl border bg-white text-center font-mono text-xl font-semibold text-brand-950 outline-none transition-colors sm:w-12 ${
+              className={`h-14 min-w-0 max-w-12 flex-1 rounded-xl border bg-white text-center font-mono text-xl font-semibold text-brand-950 outline-none transition-colors ${
                 state?.error ? "border-rose-400" : d ? "border-accent-500" : "border-brand-200"
               } focus:border-accent-500 focus:ring-4 focus:ring-accent-500/15`}
             />
