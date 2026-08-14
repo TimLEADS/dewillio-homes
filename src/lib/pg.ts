@@ -91,7 +91,7 @@ function getPool(): PoolLike {
     // share its session and its open transactions. Neon has no such limit.
     // Against Neon, bound the pool and fail a stuck connection fast rather than
     // letting a request (a login, say) hang indefinitely on a busy database.
-    ...(wsProxy ? { max: 1 } : { max: 10, idleTimeoutMillis: 10000, connectionTimeoutMillis: 15000 }),
+    ...(wsProxy ? { max: 1 } : { max: 20, idleTimeoutMillis: 10000, connectionTimeoutMillis: 8000 }),
   }) as unknown as PoolLike;
   if (wsProxy) globalForPool.__dewillioLocalPgPool = pool;
   return pool;

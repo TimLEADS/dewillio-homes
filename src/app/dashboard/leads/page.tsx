@@ -2,7 +2,8 @@ import Link from "next/link";
 import { CalendarCheck, TriangleAlert } from "lucide-react";
 import { agentLeads } from "@/lib/queries";
 import { requireAgent } from "@/lib/auth";
-import { runAutomations } from "@/lib/automations";
+import { after } from "next/server";
+import { runAutomationsIfDue } from "@/lib/automations";
 import { Badge, Card, Container } from "@/components/ui";
 import { LeadActions } from "@/components/dashboard/LeadActions";
 import {
@@ -36,7 +37,8 @@ type FilterKey = (typeof FILTERS)[number]["key"];
 
 export default async function AgentLeadsPage(props: PageProps<"/dashboard/leads">) {
   const user = await requireAgent();
-  await runAutomations();
+  // Time-based sweep; runs after the response so it never delays this render.
+  after(runAutomationsIfDue);
 
   const params = await props.searchParams;
   const raw = Array.isArray(params.view) ? params.view[0] : params.view;

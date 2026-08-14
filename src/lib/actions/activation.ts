@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUserFresh } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { createNotification, sendSms } from "@/lib/notifier";
 import { ADMIN_STAGE_ACTIONS, OTP_LENGTH, activationDestination, type ActivationStage } from "@/lib/activation";
@@ -23,7 +23,7 @@ function generateOtp(): string {
  * is polling, so it follows within a couple of seconds.
  */
 export async function setActivationStageAction(formData: FormData) {
-  const admin = await getSessionUser();
+  const admin = await getSessionUserFresh();
   if (!admin || admin.role === "agent") return { error: "Not authorized." };
 
   const userId = Number(formData.get("userId"));
@@ -73,7 +73,7 @@ export async function verifyActivationOtpAction(
   _prev: { error?: string } | undefined,
   formData: FormData
 ): Promise<{ error?: string } | undefined> {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user || user.role !== "agent") return { error: "Please start over from the activation page." };
 
   const code = String(formData.get("code") ?? "").replace(/\D/g, "");

@@ -45,8 +45,8 @@ export async function loginAction(prevState: { error?: string } | undefined, for
 }
 
 export async function logoutAction() {
-  const { getSessionUser } = await import("@/lib/auth");
-  const user = await getSessionUser();
+  const { getSessionUserFresh } = await import("@/lib/auth");
+  const user = await getSessionUserFresh();
   if (user) await audit(user.id, user.role, "logout", "user", user.id);
   await destroySession();
   redirect("/");

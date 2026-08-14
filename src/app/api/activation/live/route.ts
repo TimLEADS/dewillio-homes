@@ -59,7 +59,7 @@ export async function GET() {
         } catch {
           /* DB hiccup — next tick tries again */
         }
-      }, 8000);
+      }, 15000);
 
       cleanup = () => {
         clearInterval(keepAlive);

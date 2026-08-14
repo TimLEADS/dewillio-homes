@@ -77,7 +77,7 @@ export function LiveCheckouts() {
       }
     };
     void load();
-    const poll = setInterval(load, 2000);
+    const poll = setInterval(load, 5000);
     const onVisible = () => {
       if (!document.hidden) void load();
     };

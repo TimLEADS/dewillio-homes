@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import { getDb } from "./db";
@@ -54,27 +55,31 @@ export async function destroySession(): Promise<void> {
   c.delete(SESSION_COOKIE);
 }
 
-export async function getSessionUser(): Promise<SessionUser | null> {
+/**
+ * Session, user and profile in a single round-trip. `agent_profiles` is all
+ * TEXT/INTEGER, so `row_to_json` hands back exactly the shape `SELECT *` did.
+ */
+async function loadSessionUser(): Promise<SessionUser | null> {
   const c = await cookies();
   const token = c.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const db = getDb();
-  const session = await db
+  const session = (await db
     .prepare(
-      `SELECT s.token, s.expires_at, u.id, u.email, u.role, u.status, u.activated, u.license_verified,
+      `SELECT s.expires_at, u.id, u.email, u.role, u.status, u.activated, u.license_verified,
               u.market_approved, u.onboarding_completed, u.agreement_accepted_at, u.agreement_version,
-              u.created_at, u.updated_at
-       FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?`
+              u.created_at, u.updated_at, row_to_json(p) AS profile
+       FROM sessions s
+       JOIN users u ON u.id = s.user_id
+       LEFT JOIN agent_profiles p ON p.user_id = u.id
+       WHERE s.token = ?`
     )
-    .get(token) as User & { expires_at: string; token: string };
+    .get(token)) as (User & { expires_at: string; profile: AgentProfile | null }) | undefined;
   if (!session) return null;
   if (new Date(session.expires_at).getTime() < Date.now()) {
     await db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
     return null;
   }
-  const profile = await db.prepare("SELECT * FROM agent_profiles WHERE user_id = ?").get(session.id) as
-    | AgentProfile
-    | undefined;
   return {
     id: session.id,
     email: session.email,
@@ -88,9 +93,24 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     agreement_version: session.agreement_version,
     created_at: session.created_at,
     updated_at: session.updated_at,
-    profile: profile ?? null,
+    profile: session.profile ?? null,
   };
 }
+
+/**
+ * Uncached read, for server actions. An action and the re-render that follows
+ * it share one request, so an action must not seed the request cache with a
+ * snapshot taken before its own writes.
+ */
+export const getSessionUserFresh = loadSessionUser;
+
+/**
+ * Request-scoped read for layouts, pages and route handlers. Every protected
+ * route calls `requireX()` in the layout and again in the page; without this
+ * that is two identical session lookups on the critical path of every
+ * navigation.
+ */
+export const getSessionUser = cache(loadSessionUser);
 
 export async function requireUser(): Promise<SessionUser> {
   const user = await getSessionUser();

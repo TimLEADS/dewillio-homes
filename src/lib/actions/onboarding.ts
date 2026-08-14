@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUserFresh } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifier";
 
@@ -44,7 +44,7 @@ const profileSchema = z.object({
 });
 
 export async function saveStep(step: string, data: Record<string, unknown>) {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user || user.role !== "agent") return { error: "Not authorized." };
   if (!user.activated) return { error: "Account not activated." };
 
@@ -109,7 +109,7 @@ export async function saveStep(step: string, data: Record<string, unknown>) {
 }
 
 export async function submitOnboarding() {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user || user.role !== "agent") return { error: "Not authorized." };
 
   const db = getDb();
@@ -132,7 +132,7 @@ export async function submitOnboarding() {
 }
 
 export async function resubmitForReview() {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user || user.role !== "agent") return { error: "Not authorized." };
   const db = getDb();
   const now = new Date().toISOString();

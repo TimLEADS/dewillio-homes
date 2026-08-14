@@ -3,14 +3,14 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { getDb, REFERRAL_FEE_RATE } from "@/lib/db";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUserFresh } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifier";
 import { assignLead } from "@/lib/assignment";
 import { LEAD_STATUSES, REFERRAL_FEE_STATUSES, TRANSACTION_STATUSES } from "@/lib/constants";
 
 function requireAdminUser() {
-  return getSessionUser();
+  return getSessionUserFresh();
 }
 
 const leadSchema = z.object({
@@ -370,7 +370,7 @@ export async function sendAdminNotificationAction(prevState: unknown, formData: 
 }
 
 export async function markNotificationReadAction(formData: FormData) {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user || user.role === "agent") return;
   const id = Number(formData.get("id"));
   if (!id) return;
@@ -381,7 +381,7 @@ export async function markNotificationReadAction(formData: FormData) {
 }
 
 export async function markAllNotificationsReadAction() {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user || user.role === "agent") return;
   await getDb()
     .prepare("UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL")

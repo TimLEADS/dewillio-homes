@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
-import { getSessionUser, verifyPassword, hashPassword } from "@/lib/auth";
+import { getSessionUserFresh, verifyPassword, hashPassword } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifier";
 import { LEAD_STATUSES } from "@/lib/constants";
@@ -14,7 +14,7 @@ const statusSchema = z.object({
 });
 
 export async function updateLeadStatusAction(prevState: unknown, formData: FormData) {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user || user.role !== "agent") return { error: "Not authorized." };
   const parsed = statusSchema.safeParse({
     leadId: formData.get("leadId"),
@@ -68,7 +68,7 @@ const appointmentSchema = z.object({
 });
 
 export async function addAppointmentAction(prevState: unknown, formData: FormData) {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user || user.role !== "agent") return { error: "Not authorized." };
   const parsed = appointmentSchema.safeParse({
     leadId: formData.get("leadId"),
@@ -121,7 +121,7 @@ const appointmentStatusSchema = z.object({
 });
 
 export async function updateAppointmentStatusAction(prevState: unknown, formData: FormData) {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user || user.role !== "agent") return { error: "Not authorized." };
   const parsed = appointmentStatusSchema.safeParse({
     id: formData.get("id"),
@@ -153,7 +153,7 @@ const profileSchema = z.object({
 });
 
 export async function updateProfileAction(prevState: unknown, formData: FormData) {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user || user.role !== "agent") return { error: "Not authorized." };
   const zipRaw = (formData.get("zip_codes") as string) || "";
   const specRaw = (formData.get("specialties") as string) || "";
@@ -196,7 +196,7 @@ const passwordSchema = z.object({
 });
 
 export async function changePasswordAction(prevState: unknown, formData: FormData) {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user) return { error: "Not authorized." };
   const parsed = passwordSchema.safeParse({
     current: formData.get("current"),
@@ -217,7 +217,7 @@ const settingsSchema = z.object({
 });
 
 export async function updateNotificationSettingsAction(prevState: unknown, formData: FormData) {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user) return { error: "Not authorized." };
   const parsed = settingsSchema.safeParse({
     notify_email: formData.get("notify_email"),
@@ -234,7 +234,7 @@ export async function updateNotificationSettingsAction(prevState: unknown, formD
 }
 
 export async function markNotificationsReadAction() {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user) return { error: "Not authorized." };
   await getDb().prepare("UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL").run(new Date().toISOString(), user.id);
   revalidatePath("/dashboard");
@@ -244,7 +244,7 @@ export async function markNotificationsReadAction() {
 
 /** Void-returning variant usable directly as a `<form action={...}>` handler. */
 export async function markAllAgentNotificationsReadAction() {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user) return;
   await getDb()
     .prepare("UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL")
@@ -254,7 +254,7 @@ export async function markAllAgentNotificationsReadAction() {
 }
 
 export async function markOneNotificationReadAction(formData: FormData) {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user) return;
   const id = Number(formData.get("id"));
   if (!id) return;
@@ -266,7 +266,7 @@ export async function markOneNotificationReadAction(formData: FormData) {
 }
 
 export async function acceptAgreementAction(formData: FormData) {
-  const user = await getSessionUser();
+  const user = await getSessionUserFresh();
   if (!user || user.role !== "agent") return;
   const version = String(formData.get("version") || "").trim();
   if (!version) return;

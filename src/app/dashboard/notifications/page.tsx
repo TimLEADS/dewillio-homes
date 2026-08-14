@@ -1,6 +1,6 @@
 import { getDb } from "@/lib/db";
 import { requireAgent } from "@/lib/auth";
-import { runAutomations } from "@/lib/automations";
+import { runAutomationsIfDue } from "@/lib/automations";
 import { markAllAgentNotificationsReadAction, markOneNotificationReadAction } from "@/lib/actions/agent";
 import { Badge, Card, Container } from "@/components/ui";
 import { DATETIME } from "@/lib/constants";
@@ -35,7 +35,7 @@ const TYPE_LABEL: Record<string, string> = {
 export default async function AgentNotificationsPage() {
   const user = await requireAgent();
   // Fire any time-based alerts that have come due before rendering the inbox.
-  await runAutomations();
+  await runAutomationsIfDue();
 
   const db = getDb();
   const rows = await db

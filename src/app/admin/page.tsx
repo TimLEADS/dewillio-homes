@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowRight, DollarSign, Gavel, Handshake, ShieldAlert, Users } from "lucide-react";
 import { adminStats } from "@/lib/queries";
 import { requireAdmin } from "@/lib/auth";
-import { runAutomations } from "@/lib/automations";
+import { after } from "next/server";
+import { runAutomationsIfDue } from "@/lib/automations";
 import { Badge, Card, Container, StatCard } from "@/components/ui";
 import { MONEY } from "@/lib/constants";
 
@@ -10,7 +11,8 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
   await requireAdmin();
-  await runAutomations();
+  // Time-based sweep; runs after the response so it never delays this render.
+  after(runAutomationsIfDue);
   const s = await adminStats();
 
   return (
