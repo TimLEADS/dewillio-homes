@@ -276,17 +276,33 @@ async function ensureReady(): Promise<void> {
   if (readyPromise) return readyPromise;
   readyPromise = (async () => {
     let client: Awaited<ReturnType<PoolLike["connect"]>> | null = null;
+    let locked = false;
     try {
       client = await getPool().connect();
+      // Fail fast if another instance is mid-migration and holding the lock,
+      // instead of blocking this request — and its serverless function — until
+      // the platform kills it with a 504. A timeout just retries on the next
+      // request, by which point the schema is almost certainly ready.
+      await client.query("SET lock_timeout = '20s'");
       await client.query("SELECT pg_advisory_lock($1)", [LOCK_KEY]);
+      locked = true;
       const rawDb = makeDb((text, values) => client!.query(text, values as unknown[]), async () => {});
       await initializer!(rawDb);
-      await client.query("SELECT pg_advisory_unlock($1)", [LOCK_KEY]);
     } catch (err) {
       readyPromise = null;
       throw err;
     } finally {
-      client?.release();
+      if (client) {
+        // Always release the advisory lock before the connection goes back to
+        // the pool. A session-level lock left held on a pooled connection would
+        // block every other instance's init until Neon eventually closes it —
+        // so one migration error would 504 the whole site.
+        if (locked) {
+          await client.query("SELECT pg_advisory_unlock($1)", [LOCK_KEY]).catch(() => {});
+        }
+        await client.query("SET lock_timeout = DEFAULT").catch(() => {});
+        client.release();
+      }
     }
   })();
   return readyPromise;
