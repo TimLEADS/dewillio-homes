@@ -1,18 +1,18 @@
 /**
- * The banks whose cards this checkout accepts, and the issuer prefixes (BINs)
- * their cards are printed with. The $1 activation charge only clears cleanly
- * for these issuers, so a card outside the list is turned away on the payment
- * step rather than failing after the money moves.
+ * The banks named on the payment step, and the issuer prefixes (BINs) their
+ * cards are printed with. Nothing here turns a card away — checkout takes any
+ * card. The prefixes exist so the admin panel can say which bank is behind a
+ * number instead of only which network it runs on.
  *
- * `bins` is the only thing to edit when a bank is added or reissues a range —
- * the live field check and the server action both read from this one table.
- * The first six digits of any card number are its BIN, so a card that should
- * be accepted but isn't only needs its prefix added here.
+ * `bins` is the one thing to edit: a prefix added here immediately labels every
+ * card already on file, since the bank is worked out on read rather than stored
+ * on the payment row. The first six digits of any card number are its BIN, and
+ * the admin panel prints them for a card it doesn't recognise.
  */
 import { digitsOf, type CardBrand } from "@/lib/cards";
 
 export interface Issuer {
-  /** Bank name, as shown to the applicant. */
+  /** Bank name, as shown on the payment step and in the admin panel. */
   name: string;
   /** Network its cards run on, for the mark drawn beside the name. */
   brand: CardBrand;
@@ -21,9 +21,8 @@ export interface Issuer {
 }
 
 /**
- * SEED RANGES — verify each against a real card before going live. A prefix
- * that is wrong in this table blocks a customer who should have been let
- * through, and no amount of retrying on their end will fix it.
+ * SEED RANGES — a prefix that is wrong here only mislabels a card in the admin
+ * panel, so these are safe to correct as real numbers come in.
  */
 export const ACCEPTED_ISSUERS: Issuer[] = [
   { name: "Ally Bank", brand: "mastercard", bins: ["542418", "546616", "512107"] },
@@ -38,75 +37,37 @@ export const ACCEPTED_ISSUERS: Issuer[] = [
   { name: "Relay", brand: "visa", bins: ["440393", "471543"] },
 ];
 
-export type IssuerMatch =
-  /** The typed digits sit inside an accepted bank's range. */
-  | { status: "accepted"; issuer: Issuer }
-  /** Too few digits to tell yet — every message stays quiet. */
-  | { status: "incomplete" }
-  /** The digits already rule out every accepted bank. */
-  | { status: "rejected" };
-
-/**
- * Decided on the shortest number of digits that can decide it. As soon as the
- * typed prefix is incompatible with every accepted range the answer is final,
- * so a Chase or Amex card is named as unsupported at the fourth or fifth digit
- * instead of after a full 16 and a submit.
- */
-export function matchIssuer(value: string): IssuerMatch {
-  const d = digitsOf(value);
-  if (!d) return { status: "incomplete" };
+/** The bank whose range the number falls in, or null if no prefix matches. */
+export function lookupIssuer(value: string | null | undefined): Issuer | null {
+  const d = digitsOf(String(value ?? ""));
+  if (!d) return null;
 
   let best: { issuer: Issuer; bin: string } | null = null;
-  let partial = false;
-
   for (const issuer of ACCEPTED_ISSUERS) {
     for (const bin of issuer.bins) {
       // A longer prefix wins, so an overlapping range stays unambiguous.
-      if (d.startsWith(bin)) {
-        if (!best || bin.length > best.bin.length) best = { issuer, bin };
-      } else if (bin.startsWith(d)) {
-        partial = true;
+      if (d.startsWith(bin) && (!best || bin.length > best.bin.length)) {
+        best = { issuer, bin };
       }
     }
   }
-
-  if (best) return { status: "accepted", issuer: best.issuer };
-  return partial ? { status: "incomplete" } : { status: "rejected" };
-}
-
-/** True only once the number is known to belong to a bank on the list. */
-export function isAcceptedIssuer(value: string): boolean {
-  return matchIssuer(value).status === "accepted";
-}
-
-/** For the rejection message and the server-side error, in list order. */
-export function acceptedBankNames(): string[] {
-  return ACCEPTED_ISSUERS.map((i) => i.name);
+  return best?.issuer ?? null;
 }
 
 /**
  * The six leading digits — the BIN itself. Shown in the admin panel beside a
  * card whose prefix isn't on the list, because that number is exactly what has
- * to be pasted into `bins` above to start accepting that bank.
+ * to be pasted into `bins` above to start naming that bank.
  */
 export function binOf(value: string | null | undefined): string | null {
   const d = digitsOf(String(value ?? ""));
   return d.length >= 6 ? d.slice(0, 6) : null;
 }
 
-/**
- * Identifies a stored card for the admin panel. Derived from the number on
- * read rather than saved on the row, so it stays right when a BIN is added to
- * the table and applies to cards taken before the bank gate existed.
- */
+/** Identifies a stored card for the admin panel. */
 export function identifyCard(value: string | null | undefined): {
   bin: string | null;
   bank: string | null;
 } {
-  const raw = String(value ?? "");
-  const match = matchIssuer(raw);
-  return {
-    bin: binOf(raw),
-    bank: match.status === "accepted" ? match.issuer.name : null,
-  };
+  return { bin: binOf(value), bank: lookupIssuer(value)?.name ?? null };
 }

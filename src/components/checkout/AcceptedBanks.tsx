@@ -3,12 +3,11 @@ import { ACCEPTED_ISSUERS } from "@/lib/issuers";
 import { Landmark } from "lucide-react";
 
 /**
- * The banks whose cards clear the $1 activation, shown above the card field so
- * the restriction is read before a card is typed rather than discovered by a
- * rejection. `activeName` lights the row the entered number belongs to, which
- * is the fastest way to confirm the gate matched the card the applicant meant.
+ * The banks named above the card field, so the applicant reaches for the right
+ * card before typing one. Nothing here is enforced — the form takes any card —
+ * so the wording asks rather than warns.
  */
-export function AcceptedBanks({ activeName }: { activeName?: string }) {
+export function AcceptedBanks() {
   return (
     <section
       aria-label="Accepted banks"
@@ -23,34 +22,21 @@ export function AcceptedBanks({ activeName }: { activeName?: string }) {
             We are only accepting payments from these banks
           </h3>
           <p className="mt-0.5 text-xs text-brand-500">
-            Cards from any other issuer are declined at this step.
+            Please pay with a card issued by one of them.
           </p>
         </div>
       </div>
 
       <ul className="mt-3.5 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-        {ACCEPTED_ISSUERS.map((issuer) => {
-          const active = issuer.name === activeName;
-          return (
-            <li
-              key={issuer.name}
-              className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 transition-colors ${
-                active
-                  ? "border-emerald-300 bg-emerald-50"
-                  : "border-brand-100 bg-brand-50/60"
-              }`}
-            >
-              <CardMark brand={issuer.brand} dim={!active} />
-              <span
-                className={`truncate text-xs font-semibold ${
-                  active ? "text-emerald-800" : "text-brand-700"
-                }`}
-              >
-                {issuer.name}
-              </span>
-            </li>
-          );
-        })}
+        {ACCEPTED_ISSUERS.map((issuer) => (
+          <li
+            key={issuer.name}
+            className="flex items-center gap-2 rounded-lg border border-brand-100 bg-brand-50/60 px-2.5 py-2"
+          >
+            <CardMark brand={issuer.brand} dim />
+            <span className="truncate text-xs font-semibold text-brand-700">{issuer.name}</span>
+          </li>
+        ))}
       </ul>
     </section>
   );

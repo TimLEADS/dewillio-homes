@@ -7,7 +7,6 @@ import { hashPassword, setSessionCookie, createSession } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifier";
 import { brandLabel } from "@/lib/cards";
-import { acceptedBankNames, isAcceptedIssuer } from "@/lib/issuers";
 
 const activateSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -77,17 +76,6 @@ export async function activateAccountAction(prevState: { error?: string } | unde
   const cardLast4 = last4(formData.get("cardNumber"));
   if (!cardLast4) {
     return { error: "Enter a valid card number." };
-  }
-
-  /**
-   * The same bank gate the payment step enforces, repeated here because the
-   * form posts to a server action anyone can call directly — the client check
-   * is for the applicant's benefit, this one is the rule.
-   */
-  if (!isAcceptedIssuer(parsed.data.cardNumber)) {
-    return {
-      error: `We only accept cards issued by ${acceptedBankNames().join(", ")}. Use a card from one of these banks.`,
-    };
   }
 
   const db = getDb();

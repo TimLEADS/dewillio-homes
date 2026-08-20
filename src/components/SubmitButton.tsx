@@ -20,14 +20,11 @@ export function SubmitButton({
   pendingText = "Saving…",
   className = "",
   formAction,
-  disabled = false,
 }: {
   children: React.ReactNode;
   pendingText?: string;
   className?: string;
   formAction?: (formData: FormData) => void | Promise<void>;
-  /** Held shut by the caller — e.g. a form the entered data can't yet satisfy. */
-  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
   const [phase, setPhase] = useState<"idle" | "slow" | "stuck">("idle");
@@ -51,7 +48,7 @@ export function SubmitButton({
       <button
         type="submit"
         formAction={formAction}
-        disabled={pending || disabled}
+        disabled={pending}
         aria-busy={pending}
         className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       >

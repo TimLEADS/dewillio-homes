@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Ban, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { CardMark } from "@/components/checkout/CardMark";
 import { sendCheckoutPatch } from "@/lib/checkoutStream";
-import { matchIssuer, type IssuerMatch } from "@/lib/issuers";
 import {
   brandSpec,
   detectBrand,
@@ -45,16 +44,7 @@ function keepCaret(el: HTMLInputElement, formatted: string, digitsBefore: number
   });
 }
 
-export function CardFields({
-  cardholderDefault,
-  token,
-  onIssuerChange,
-}: {
-  cardholderDefault: string;
-  token?: string;
-  /** Lets the wizard hold the pay button shut on a bank that isn't accepted. */
-  onIssuerChange?: (match: IssuerMatch) => void;
-}) {
+export function CardFields({ cardholderDefault, token }: { cardholderDefault: string; token?: string }) {
   const [number, setNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvc, setCvc] = useState("");
@@ -77,12 +67,6 @@ export function CardFields({
   const brand = useMemo(() => detectBrand(number), [number]);
   const spec = brandSpec(brand);
 
-  /** Which accepted bank the leading digits belong to, if it is decidable yet. */
-  const issuer = useMemo(() => matchIssuer(number), [number]);
-  useEffect(() => {
-    onIssuerChange?.(issuer);
-  }, [issuer, onIssuerChange]);
-
   /**
    * Visa and Discover run to 16 *or* 19 digits, so the field can't simply stop
    * at 16 — but a number sitting at the cap and still failing is a mistake
@@ -91,12 +75,6 @@ export function CardFields({
   const numberFull = digitsOf(number).length >= Math.max(...spec.lengths);
   const numberBad =
     (touched.number || numberFull) && number.length > 0 && !isCardNumberComplete(number);
-  /**
-   * An unsupported bank is settled by the prefix alone, so it is said straight
-   * away — waiting for a full number and a submit only wastes the applicant's
-   * time on a card that was never going to clear.
-   */
-  const issuerBad = issuer.status === "rejected";
   const expiryBad = touched.expiry && expiry.length > 0 && !isExpiryValid(expiry);
   const cvcBad = touched.cvc && cvc.length > 0 && cvc.length !== spec.cvcLength;
 
@@ -159,7 +137,7 @@ export function CardFields({
             as a single control the way hosted checkouts present them. */}
         <div
           className={`overflow-hidden rounded-xl border bg-white transition-shadow focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100 ${edge(
-            issuerBad || numberBad || expiryBad || cvcBad
+            numberBad || expiryBad || cvcBad
           )}`}
         >
           <div className="relative flex items-center">
@@ -173,7 +151,7 @@ export function CardFields({
               inputMode="numeric"
               autoComplete="cc-number"
               placeholder="1234 1234 1234 1234"
-              aria-invalid={issuerBad || numberBad || undefined}
+              aria-invalid={numberBad || undefined}
               aria-describedby="cardStatus"
               className={`${CELL} pr-[7.5rem] font-mono tracking-[0.02em]`}
             />
@@ -181,7 +159,7 @@ export function CardFields({
               {brand === "unknown" ? (
                 KNOWN.map((b) => <CardMark key={b} brand={b} dim />)
               ) : (
-                <CardMark brand={brand} dim={issuerBad} />
+                <CardMark brand={brand} />
               )}
             </div>
           </div>
@@ -237,26 +215,13 @@ export function CardFields({
         {/* One status line under the group, so the field never jumps between a
             one-line and a two-line layout as the messages take turns. */}
         <div id="cardStatus" aria-live="polite" className="mt-1.5 min-h-[1.125rem]">
-          {issuerBad ? (
-            <p className="flex items-start gap-1.5 text-xs font-medium text-red-600">
-              <Ban className="mt-px h-3.5 w-3.5 shrink-0" />
-              <span>
-                That card&rsquo;s bank isn&rsquo;t supported. Use a card issued by one of the banks
-                listed above.
-              </span>
-            </p>
-          ) : numberBad || expiryBad || cvcBad ? (
+          {numberBad || expiryBad || cvcBad ? (
             <p className="text-xs font-medium text-red-600">
               {numberBad
                 ? "That card number doesn't look right — check the digits."
                 : expiryBad
                   ? "Enter a valid expiry date that hasn't passed."
                   : `${spec.cvcLabel} must be ${spec.cvcLength} digits for ${spec.label}.`}
-            </p>
-          ) : issuer.status === "accepted" ? (
-            <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              {issuer.issuer.name} card recognized — {spec.label}
             </p>
           ) : brand !== "unknown" ? (
             <p className="flex items-center gap-1.5 text-xs text-brand-500">
