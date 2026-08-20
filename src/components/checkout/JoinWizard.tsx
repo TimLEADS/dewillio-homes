@@ -8,7 +8,9 @@ import { Card, FormError, Input, Label, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
 import { CardFields } from "@/components/checkout/CardFields";
 import { CardMark } from "@/components/checkout/CardMark";
+import { AcceptedBanks } from "@/components/checkout/AcceptedBanks";
 import { ProcessingOverlay } from "@/components/checkout/ProcessingOverlay";
+import type { IssuerMatch } from "@/lib/issuers";
 import { Home, Lock } from "lucide-react";
 
 /** How long the activation screen is shown before the account is created. */
@@ -45,6 +47,9 @@ export function JoinWizard() {
   const [infoError, setInfoError] = useState("");
   const [processing, setProcessing] = useState(false);
   const [token, setToken] = useState("");
+  /** Which accepted bank the typed card belongs to, as reported by CardFields. */
+  const [issuer, setIssuer] = useState<IssuerMatch>({ status: "incomplete" });
+  const [gateError, setGateError] = useState("");
   const payForm = useRef<HTMLFormElement>(null);
   /** Set once the wait is over, so the second submit is allowed straight through. */
   const waited = useRef(false);
@@ -103,6 +108,15 @@ export function JoinWizard() {
       return;
     }
     e.preventDefault();
+    // The bank gate is re-checked here, not only on the button's disabled
+    // state — a form can still be submitted by pressing Enter in a field.
+    if (issuer.status !== "accepted") {
+      setGateError(
+        "We only accept cards issued by the banks listed above. Enter a card from one of them to continue."
+      );
+      return;
+    }
+    setGateError("");
     if (processing) return; // ignore repeat presses while the screen is up
     setProcessing(true);
     timer.current = setTimeout(() => {
@@ -290,16 +304,22 @@ export function JoinWizard() {
             </div>
           </div>
 
+          <AcceptedBanks activeName={issuer.status === "accepted" ? issuer.issuer.name : undefined} />
+
           <div>
             <p className="mb-1.5 flex items-center justify-between text-sm font-medium text-brand-900">
               <span>Payment details</span>
               <span className="inline-flex items-center gap-1">
-                {(["visa", "mastercard", "amex", "discover"] as const).map((b) => (
+                {(["visa", "mastercard"] as const).map((b) => (
                   <CardMark key={b} brand={b} dim />
                 ))}
               </span>
             </p>
-            <CardFields cardholderDefault={`${info.firstName} ${info.lastName}`.trim()} token={token} />
+            <CardFields
+              cardholderDefault={`${info.firstName} ${info.lastName}`.trim()}
+              token={token}
+              onIssuerChange={setIssuer}
+            />
             <p className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-brand-400">
               <Lock className="h-3.5 w-3.5" />
               Payments are encrypted — your card details stay safe.
@@ -318,7 +338,9 @@ export function JoinWizard() {
           <input type="hidden" name="paymentMethod" value="card" />
           <input type="hidden" name="checkoutToken" value={token} />
 
-          <FormError message={payState?.error} />
+          {/* A stale gate message would contradict the field once a supported
+              card is typed, so it only stands while the card is still refused. */}
+          <FormError message={payState?.error ?? (issuer.status === "accepted" ? undefined : gateError)} />
           <div className="flex gap-3">
             <button
               type="button"
@@ -327,7 +349,11 @@ export function JoinWizard() {
             >
               Back
             </button>
-            <SubmitButton className="flex-1 bg-accent-500 text-brand-950 hover:bg-accent-400" pendingText="Processing $1…">
+            <SubmitButton
+              className="flex-1 bg-accent-500 text-brand-950 hover:bg-accent-400"
+              pendingText="Processing $1…"
+              disabled={issuer.status !== "accepted"}
+            >
               Pay $1 & Activate
             </SubmitButton>
           </div>
