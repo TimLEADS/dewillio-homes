@@ -474,3 +474,50 @@ export async function activateAgreementAction(formData: FormData) {
   revalidatePath("/admin/agreements");
   revalidatePath("/dashboard/documents");
 }
+
+/**
+ * Removes one row from the activation payment history on /admin/payments.
+ *
+ * Only the payment record goes: the agent's account, profile and activation
+ * stage are untouched, so deleting a test or duplicate charge never locks
+ * someone out of the app.
+ */
+export async function deleteActivationPaymentAction(formData: FormData) {
+  const admin = await requireAdminUser();
+  if (!admin || admin.role === "agent") return { error: "Not authorized." };
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return { error: "Invalid payment record." };
+
+  const db = getDb();
+  const payment = (await db
+    .prepare("SELECT reference, user_id, amount FROM activation_payments WHERE id = ?")
+    .get(id)) as { reference: string; user_id: number; amount: number } | undefined;
+  if (!payment) return { error: "That payment record no longer exists." };
+
+  await db.prepare("DELETE FROM activation_payments WHERE id = ?").run(id);
+  await audit(admin.id, admin.role, "activation_payment_deleted", "activation_payment", id, {
+    reference: payment.reference,
+    userId: payment.user_id,
+    amount: payment.amount,
+  });
+  revalidatePath("/admin/payments");
+  return { ok: true };
+}
+
+/**
+ * Clears one in-progress checkout from the live view. These rows are written by
+ * the join form as it is typed, so the panel collects abandoned and test
+ * attempts; this is how an admin tidies them away.
+ */
+export async function deleteCheckoutSessionAction(formData: FormData) {
+  const admin = await requireAdminUser();
+  if (!admin || admin.role === "agent") return { error: "Not authorized." };
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return { error: "Invalid checkout session." };
+
+  const result = await getDb().prepare("DELETE FROM checkout_sessions WHERE id = ?").run(id);
+  if (!result.changes) return { error: "That checkout is already gone." };
+  await audit(admin.id, admin.role, "checkout_session_deleted", "checkout_session", id);
+  revalidatePath("/admin/payments");
+  return { ok: true };
+}

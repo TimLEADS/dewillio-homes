@@ -6,8 +6,7 @@ import { getDb } from "@/lib/db";
 import { getSessionUserFresh } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { createNotification, sendSms } from "@/lib/notifier";
-import { ADMIN_STAGE_ACTIONS, OTP_LENGTH, activationDestination, type ActivationStage } from "@/lib/activation";
-import { publishActivation } from "@/lib/activationBus";
+import { ADMIN_STAGE_ACTIONS, OTP_LENGTH, type ActivationStage } from "@/lib/activation";
 
 /** A fresh numeric code. Fine for this gate — no card is charged and no secret rides on it. */
 function generateOtp(): string {
@@ -62,9 +61,8 @@ export async function setActivationStageAction(formData: FormData) {
   }
 
   revalidatePath("/admin/payments");
-  // Push to any applicant browser holding the loading screen open, so it turns
-  // over on the next SSE frame instead of waiting for a poll.
-  publishActivation(userId, { stage, destination: activationDestination(stage) });
+  // The applicant's screen polls /api/activation/status every couple of
+  // seconds, so it follows this decision on its own.
   return { ok: true, stage };
 }
 

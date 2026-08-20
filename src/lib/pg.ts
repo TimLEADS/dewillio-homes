@@ -52,14 +52,16 @@ let pool: PoolLike | null = null;
 let poolOverride: PoolLike | null = null;
 
 /**
- * Turbopack hands pages and server actions their own instance of this module,
- * and mints another on every hot reload — each would build its own Pool and
- * hold its own connection, so a long dev session slowly accumulates them. That
- * is invisible against Neon but swamps the single-backend local database, so
- * local mode keeps one pool per process here instead of one per module.
+ * Next gives pages, route handlers and server actions their own instance of
+ * this module (and mints another on every dev hot reload). Each instance would
+ * otherwise build its own Pool, so a single serverless container could hold
+ * several pools' worth of Postgres connections at once — which is how a handful
+ * of simultaneous visitors used to exhaust the database's connection limit and
+ * take the site down. One pool per *process*, parked on globalThis, in every
+ * environment.
  */
 interface GlobalWithPool {
-  __dewillioLocalPgPool?: PoolLike;
+  __dewillioPgPool?: PoolLike;
 }
 const globalForPool = globalThis as unknown as GlobalWithPool;
 
@@ -72,28 +74,45 @@ export function setPoolOverride(override: PoolLike | null): void {
   readyPromise = null;
 }
 
+/** Warn once if the connection string bypasses Neon's connection pooler. */
+function warnIfUnpooled(url: string): void {
+  if (wsProxy || url.includes("-pooler.")) return;
+  console.warn(
+    "[dewillio] DATABASE_URL points at a direct Neon endpoint. Use the pooled connection string (the host ends in `-pooler`) or concurrent visitors can exhaust the database's connection limit."
+  );
+}
+
 function getPool(): PoolLike {
   if (poolOverride) return poolOverride;
   if (pool) return pool;
+  if (globalForPool.__dewillioPgPool) {
+    pool = globalForPool.__dewillioPgPool;
+    return pool;
+  }
   const url = process.env.DATABASE_URL;
   if (!url) {
     throw new Error(
       "DATABASE_URL is not set. Add your Neon connection string to .env.local (locally) and to the Vercel project's Environment Variables."
     );
   }
-  if (wsProxy && globalForPool.__dewillioLocalPgPool) {
-    pool = globalForPool.__dewillioLocalPgPool;
-    return pool;
-  }
+  warnIfUnpooled(url);
   pool = new Pool({
     connectionString: url,
     // The local bridge fronts a single PGlite backend, so a second client would
     // share its session and its open transactions. Neon has no such limit.
-    // Against Neon, bound the pool and fail a stuck connection fast rather than
-    // letting a request (a login, say) hang indefinitely on a busy database.
-    ...(wsProxy ? { max: 1 } : { max: 20, idleTimeoutMillis: 10000, connectionTimeoutMillis: 8000 }),
+    //
+    // Against Neon: `max` is per container, and a burst of traffic can bring up
+    // several containers at once, so this has to stay well under the database's
+    // own limit rather than claim it all. Ten is far more than one container's
+    // request concurrency needs. Idle connections are handed back quickly so a
+    // container that goes quiet stops holding a slot the next visitor needs,
+    // and a connection that never establishes fails fast instead of hanging a
+    // login until the platform kills it.
+    ...(wsProxy
+      ? { max: 1 }
+      : { max: 10, idleTimeoutMillis: 15000, connectionTimeoutMillis: 8000 }),
   }) as unknown as PoolLike;
-  if (wsProxy) globalForPool.__dewillioLocalPgPool = pool;
+  globalForPool.__dewillioPgPool = pool;
   return pool;
 }
 
@@ -264,9 +283,26 @@ function makeDb(run: Runner, ensureReady: () => Promise<void>): Db {
 }
 
 let initializer: ((db: Db) => Promise<void>) | null = null;
+let upToDate: ((db: Db) => Promise<boolean>) | null = null;
 
-export function setInitializer(fn: (db: Db) => Promise<void>): void {
+/**
+ * Registers schema setup, plus an optional cheap "is it already current?" probe.
+ *
+ * The probe matters far more than it looks. Without it every cold container ran
+ * the whole DDL script before answering its first query, and `ALTER TABLE ...
+ * ADD COLUMN IF NOT EXISTS` takes an ACCESS EXCLUSIVE lock on the table even
+ * when the column is already there. A few visitors arriving together spin up a
+ * few containers together, each grabbing exclusive locks on `users` while the
+ * others are trying to read it — every request piles up behind the migration
+ * and the site appears to go down. With the probe, a provisioned database costs
+ * one indexed SELECT and no locks at all.
+ */
+export function setInitializer(
+  fn: (db: Db) => Promise<void>,
+  isUpToDate?: (db: Db) => Promise<boolean>
+): void {
   initializer = fn;
+  upToDate = isUpToDate ?? null;
 }
 
 const LOCK_KEY = 8140255301;
@@ -278,16 +314,44 @@ async function ensureReady(): Promise<void> {
     let client: Awaited<ReturnType<PoolLike["connect"]>> | null = null;
     let locked = false;
     try {
+      // Fast path: the schema is already at the version this build expects, so
+      // there is nothing to run. No dedicated connection, no advisory lock, no
+      // DDL — just one small read on the pool every container does once.
+      if (upToDate) {
+        const probe = makeDb(
+          (text, values) => getPool().query(text, values as unknown[]),
+          async () => {}
+        );
+        if (await upToDate(probe)) return;
+      }
       client = await getPool().connect();
-      // Fail fast if another instance is mid-migration and holding the lock,
-      // instead of blocking this request — and its serverless function — until
-      // the platform kills it with a 504. A timeout just retries on the next
-      // request, by which point the schema is almost certainly ready.
-      await client.query("SET lock_timeout = '20s'");
-      await client.query("SELECT pg_advisory_lock($1)", [LOCK_KEY]);
-      locked = true;
-      const rawDb = makeDb((text, values) => client!.query(text, values as unknown[]), async () => {});
-      await initializer!(rawDb);
+      const runInit = async () => {
+        const rawDb = makeDb((text, values) => client!.query(text, values as unknown[]), async () => {});
+        await initializer!(rawDb);
+      };
+      // Grab the init lock only if it's free — never block on it. Blocking was
+      // the hazard: a lock left held on a pooled Neon session (or leaked from a
+      // failed migration) would stall every cold instance's first query, so a
+      // login could sit ~20s and then throw a server error while warm instances
+      // served fine.
+      const got = await client.query("SELECT pg_try_advisory_lock($1) AS ok", [LOCK_KEY]);
+      locked = Boolean((got.rows[0] as { ok?: boolean } | undefined)?.ok);
+      if (locked) {
+        await runInit();
+      } else {
+        // Someone else holds it. If the schema is already provisioned — true on
+        // any database that has served a request before — we are ready and must
+        // not wait on a lock that might never free. Only a genuine first-ever
+        // setup (no `users` table yet) is worth waiting for, and only briefly.
+        const probe = await client.query("SELECT to_regclass('public.users') AS t");
+        const provisioned = Boolean((probe.rows[0] as { t?: string | null } | undefined)?.t);
+        if (!provisioned) {
+          await client.query("SET lock_timeout = '10s'");
+          await client.query("SELECT pg_advisory_lock($1)", [LOCK_KEY]);
+          locked = true;
+          await runInit();
+        }
+      }
     } catch (err) {
       readyPromise = null;
       throw err;

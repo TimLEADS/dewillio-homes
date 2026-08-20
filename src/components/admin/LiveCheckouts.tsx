@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { CreditCard, KeyRound, Radio } from "lucide-react";
 import { Badge, Card } from "@/components/ui";
+import { DeleteButton } from "@/components/admin/DeleteButton";
+import { deleteCheckoutSessionAction } from "@/lib/actions/admin";
 import { OTP_LENGTH } from "@/lib/activation";
 
 interface LiveSession {
@@ -200,11 +202,23 @@ export function LiveCheckouts() {
                   ) : null}
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-brand-400">
-                  {s.brokerage ? <span>{s.brokerage}</span> : null}
-                  {s.license_state ? <span>License · {s.license_state}</span> : null}
-                  {s.phone ? <span>{s.phone}</span> : null}
-                  <span>{now ? agoLabel(s.updated_at, now) : ""}</span>
+                <div className="mt-3 flex items-end justify-between gap-4">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-brand-400">
+                    {s.brokerage ? <span>{s.brokerage}</span> : null}
+                    {s.license_state ? <span>License · {s.license_state}</span> : null}
+                    {s.phone ? <span>{s.phone}</span> : null}
+                    <span>{now ? agoLabel(s.updated_at, now) : ""}</span>
+                  </div>
+                  <DeleteButton
+                    id={s.id}
+                    action={deleteCheckoutSessionAction}
+                    label="Remove"
+                    confirmLabel="Remove?"
+                    className="shrink-0"
+                    // Drop it from the panel at once; the next poll would
+                    // otherwise leave the card up for a few more seconds.
+                    onDeleted={() => setSessions((list) => list.filter((x) => x.id !== s.id))}
+                  />
                 </div>
               </Card>
             );

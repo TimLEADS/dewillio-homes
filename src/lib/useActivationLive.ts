@@ -7,55 +7,58 @@ export interface ActivationSnapshot {
   destination: string;
 }
 
+/** How often the applicant's screen re-checks where the admin has routed them. */
+const POLL_MS = 2500;
+
 /**
- * Live activation stage for the logged-in applicant. Primary channel is an
- * EventSource on `/api/activation/live`: the moment an admin routes them from
- * the dashboard, `stage`/`destination` update inside one SSE frame.
+ * Live activation stage for the logged-in applicant: a short poll of
+ * `/api/activation/status`, so the loading screen turns over within a couple of
+ * seconds of the admin's decision.
  *
- * Every 15s the hook also re-checks `/api/activation/status` as a slow backup —
- * cheap, and it covers serverless fleets where the SSE stream's own fallback
- * timer is the only other net — and it never runs while the tab is hidden.
+ * This used to be a Server-Sent Events stream. On a serverless deployment each
+ * open stream pins a function invocation (and the database connection behind
+ * it) for as long as the applicant sits on the screen, so a few simultaneous
+ * applicants could hold the platform's whole concurrency budget and the site
+ * would stop answering. The stream also could not see a decision made on
+ * another container, so it fell back to polling the database anyway — the push
+ * bought nothing that this doesn't. A single indexed row read every couple of
+ * seconds is cheap, and the request is over in milliseconds.
+ *
+ * The poll pauses while the tab is hidden and fires once immediately when it
+ * comes back, so a backgrounded screen costs nothing and catches up at once.
  */
 export function useActivationLive(): ActivationSnapshot | null {
   const [snap, setSnap] = useState<ActivationSnapshot | null>(null);
 
   useEffect(() => {
     let stopped = false;
-    let es: EventSource | null = null;
+    let inFlight = false;
 
-    const apply = (data: ActivationSnapshot) => {
-      if (!stopped) setSnap(data);
+    const check = async () => {
+      if (stopped || inFlight) return;
+      if (typeof document !== "undefined" && document.hidden) return;
+      inFlight = true;
+      try {
+        const res = await fetch("/api/activation/status", { cache: "no-store" });
+        if (res.ok && !stopped) setSnap((await res.json()) as ActivationSnapshot);
+      } catch {
+        /* offline for a beat — the next tick tries again */
+      } finally {
+        inFlight = false;
+      }
     };
 
-    try {
-      es = new EventSource("/api/activation/live");
-      es.onmessage = (e) => {
-        try {
-          apply(JSON.parse(e.data) as ActivationSnapshot);
-        } catch {
-          /* malformed frame — ignore */
-        }
-      };
-      // EventSource reconnects automatically; onerror is expected traffic.
-    } catch {
-      es = null;
-    }
-
-    const poll = setInterval(async () => {
-      if (!stopped && typeof document !== "undefined" && !document.hidden) {
-        try {
-          const res = await fetch("/api/activation/status", { cache: "no-store" });
-          if (res.ok) apply((await res.json()) as ActivationSnapshot);
-        } catch {
-          /* offline for a beat — next tick */
-        }
-      }
-    }, 15000);
+    void check();
+    const poll = setInterval(check, POLL_MS);
+    const onVisible = () => {
+      if (!document.hidden) void check();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       stopped = true;
-      es?.close();
       clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 

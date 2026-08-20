@@ -4,6 +4,8 @@ import { Badge, Card, Container, StatCard } from "@/components/ui";
 import { DATETIME, MONEY } from "@/lib/constants";
 import { ActivationQueueSection } from "@/components/admin/ActivationQueueSection";
 import { LiveCheckouts } from "@/components/admin/LiveCheckouts";
+import { DeleteButton } from "@/components/admin/DeleteButton";
+import { deleteActivationPaymentAction } from "@/lib/actions/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -79,12 +81,13 @@ export default async function AdminPaymentsPage() {
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3">Account</th>
                 <th className="px-5 py-3">Date</th>
+                <th className="px-5 py-3 text-right">Remove</th>
               </tr>
             </thead>
             <tbody>
               {payments.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-5 py-6 text-sm text-brand-500">
+                  <td colSpan={11} className="px-5 py-6 text-sm text-brand-500">
                     No activation payments recorded yet.
                   </td>
                 </tr>
@@ -143,6 +146,13 @@ export default async function AdminPaymentsPage() {
                     <td className="whitespace-nowrap px-5 py-3 text-brand-500">
                       {DATETIME(p.created_at as string)}
                     </td>
+                    <td className="whitespace-nowrap px-5 py-3 text-right">
+                      <DeleteButton
+                        id={p.id as number}
+                        action={deleteActivationPaymentAction}
+                        className="inline-block text-left"
+                      />
+                    </td>
                   </tr>
                 ))
               )}
@@ -153,6 +163,7 @@ export default async function AdminPaymentsPage() {
 
       <p className="mt-6 text-xs leading-relaxed text-brand-400">
         The $1 activation fee is a one-time account activation charge, not a subscription.
+        Removing a row here deletes the payment record only — the agent&rsquo;s account stays as it is.
       </p>
     </Container>
   );

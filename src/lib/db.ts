@@ -45,11 +45,41 @@ export function getDb(): Db {
   return getPg();
 }
 
-setInitializer(async (db) => {
-  await migrate(db);
-  await seed(db);
-  await ensureAgreement(db);
-});
+/**
+ * Bumped whenever `migrate`, `seed` or `ensureAgreement` below change.
+ *
+ * Once a database is stamped with this value, cold containers skip schema setup
+ * entirely: one small read instead of the whole DDL script and the exclusive
+ * table locks it takes. Forget to bump it after editing the schema and your new
+ * columns simply never get created — so bump it in the same commit.
+ */
+const SCHEMA_VERSION = "2026-08-20.1";
+
+setInitializer(
+  async (db) => {
+    await migrate(db);
+    await seed(db);
+    await ensureAgreement(db);
+    await db
+      .prepare(
+        `INSERT INTO schema_meta (key, value, updated_at) VALUES ('schema_version', ?, ?)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at`
+      )
+      .run(SCHEMA_VERSION, new Date().toISOString());
+  },
+  async (db) => {
+    try {
+      const row = (await db
+        .prepare("SELECT value FROM schema_meta WHERE key = 'schema_version'")
+        .get()) as { value: string } | undefined;
+      return row?.value === SCHEMA_VERSION;
+    } catch {
+      // No `schema_meta` yet — a database that has never been provisioned, or
+      // one stamped before this table existed. Either way, run the setup.
+      return false;
+    }
+  }
+);
 
 async function migrate(db: Db): Promise<void> {
   await db.exec(`
@@ -251,6 +281,14 @@ async function migrate(db: Db): Promise<void> {
       step TEXT,
       user_id INTEGER,
       created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    -- Records which schema version this database is already at, so a cold
+    -- container can skip the rest of this script instead of re-running it.
+    CREATE TABLE IF NOT EXISTS schema_meta (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
 

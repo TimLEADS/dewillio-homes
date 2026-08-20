@@ -58,7 +58,10 @@ export async function ActivationQueueSection() {
 
   return (
     <section className="mt-8">
-      <AutoRefresh seconds={5} />
+      {/* Re-runs this page's queries on the server. The Live Checkouts panel
+          above polls its own light endpoint far more often, so this only needs
+          to be quick enough to notice a new applicant joining the queue. */}
+      <AutoRefresh seconds={10} />
 
       <div className="flex items-center justify-between gap-4">
         <div>

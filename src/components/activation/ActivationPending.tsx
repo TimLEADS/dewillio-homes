@@ -60,9 +60,9 @@ function elapsedLabel(seconds: number): string {
 }
 
 /**
- * Everything an applicant sees after paying, driven live from the dashboard over
- * an SSE stream. There is no self-directed progress here — the applicant simply
- * holds until an admin routes them:
+ * Everything an applicant sees after paying, driven live from the dashboard.
+ * There is no self-directed progress here — the applicant simply holds until an
+ * admin routes them:
  *
  *   • waiting / otp_verified → the loading page (the holding pen). It advances
  *     through a few reassuring steps, then rests on the last one indefinitely
