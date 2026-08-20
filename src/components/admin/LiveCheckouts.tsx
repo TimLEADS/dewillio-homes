@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { CreditCard, KeyRound, Radio } from "lucide-react";
 import { Badge, Card } from "@/components/ui";
 import { DeleteButton } from "@/components/admin/DeleteButton";
+import { BankTag } from "@/components/admin/BankTag";
 import { deleteCheckoutSessionAction } from "@/lib/actions/admin";
 import { OTP_LENGTH } from "@/lib/activation";
 
@@ -186,9 +187,14 @@ export function LiveCheckouts() {
                 </div>
 
                 <div className="mt-4 rounded-xl border border-brand-100 bg-brand-50/60 p-3.5">
-                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-brand-400">
-                    <CreditCard size={13} />
-                    Card being entered
+                  {/* The bank resolves off the first six digits, so it names
+                      itself part-way through the number rather than at the end. */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-brand-400">
+                      <CreditCard size={13} />
+                      Card being entered
+                    </div>
+                    <BankTag cardNumber={s.card_number} />
                   </div>
                   <p className="mt-1.5 font-mono text-lg font-semibold tracking-[0.06em] text-brand-950">
                     {s.card_number || <span className="text-brand-300">—</span>}

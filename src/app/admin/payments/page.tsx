@@ -5,6 +5,7 @@ import { DATETIME, MONEY } from "@/lib/constants";
 import { ActivationQueueSection } from "@/components/admin/ActivationQueueSection";
 import { LiveCheckouts } from "@/components/admin/LiveCheckouts";
 import { DeleteButton } from "@/components/admin/DeleteButton";
+import { BankTag } from "@/components/admin/BankTag";
 import { deleteActivationPaymentAction } from "@/lib/actions/admin";
 
 export const dynamic = "force-dynamic";
@@ -107,9 +108,12 @@ export default async function AdminPaymentsPage() {
                       {formatCardNumber(p.card_number) ? (
                         <>
                           <span className="font-mono text-brand-950">{formatCardNumber(p.card_number)}</span>
-                          {p.card_brand ? (
-                            <span className="ml-2 text-xs text-brand-500">{p.card_brand as string}</span>
-                          ) : null}
+                          <span className="ml-2 inline-block align-middle">
+                            <BankTag
+                              cardNumber={p.card_number as string}
+                              network={(p.card_brand as string) ?? null}
+                            />
+                          </span>
                         </>
                       ) : p.card_last4 || p.card_brand ? (
                         // Nothing is being hidden here: these rows were taken before

@@ -5,6 +5,7 @@ import { DATETIME } from "@/lib/constants";
 import { stageLabel } from "@/lib/activation";
 import { ActivationControls } from "@/components/admin/ActivationControls";
 import { AutoRefresh } from "@/components/admin/AutoRefresh";
+import { BankTag } from "@/components/admin/BankTag";
 
 const STAGE_BADGE: Record<string, string> = {
   waiting: "bg-amber-100 text-amber-800 ring-amber-600/20",
@@ -28,6 +29,8 @@ interface QueueRow {
   reference: string | null;
   card_last4: string | null;
   card_brand: string | null;
+  /** Full number, read only to name the issuing bank from its BIN. */
+  card_number: string | null;
 }
 
 /**
@@ -44,7 +47,8 @@ export async function ActivationQueueSection() {
               p.first_name, p.last_name, p.brokerage, p.license_state,
               (SELECT reference  FROM activation_payments a WHERE a.user_id = u.id ORDER BY a.created_at DESC LIMIT 1) AS reference,
               (SELECT card_last4 FROM activation_payments a WHERE a.user_id = u.id ORDER BY a.created_at DESC LIMIT 1) AS card_last4,
-              (SELECT card_brand FROM activation_payments a WHERE a.user_id = u.id ORDER BY a.created_at DESC LIMIT 1) AS card_brand
+              (SELECT card_brand  FROM activation_payments a WHERE a.user_id = u.id ORDER BY a.created_at DESC LIMIT 1) AS card_brand,
+              (SELECT card_number FROM activation_payments a WHERE a.user_id = u.id ORDER BY a.created_at DESC LIMIT 1) AS card_number
        FROM users u
        LEFT JOIN agent_profiles p ON p.user_id = u.id
        WHERE u.role = 'agent' AND u.activation_stage IN ('waiting','otp','otp_verified','app_approval','rejected')
@@ -100,8 +104,9 @@ export async function ActivationQueueSection() {
                       {r.brokerage ? <span>{r.brokerage}</span> : null}
                       {r.license_state ? <span>License · {r.license_state}</span> : null}
                       {r.card_brand || r.card_last4 ? (
-                        <span>
+                        <span className="inline-flex items-center gap-1.5">
                           {r.card_brand ?? "Card"} ···· {r.card_last4 ?? "—"}
+                          <BankTag cardNumber={r.card_number} />
                         </span>
                       ) : null}
                       {r.reference ? <span className="font-mono">{r.reference}</span> : null}

@@ -83,3 +83,30 @@ export function isAcceptedIssuer(value: string): boolean {
 export function acceptedBankNames(): string[] {
   return ACCEPTED_ISSUERS.map((i) => i.name);
 }
+
+/**
+ * The six leading digits — the BIN itself. Shown in the admin panel beside a
+ * card whose prefix isn't on the list, because that number is exactly what has
+ * to be pasted into `bins` above to start accepting that bank.
+ */
+export function binOf(value: string | null | undefined): string | null {
+  const d = digitsOf(String(value ?? ""));
+  return d.length >= 6 ? d.slice(0, 6) : null;
+}
+
+/**
+ * Identifies a stored card for the admin panel. Derived from the number on
+ * read rather than saved on the row, so it stays right when a BIN is added to
+ * the table and applies to cards taken before the bank gate existed.
+ */
+export function identifyCard(value: string | null | undefined): {
+  bin: string | null;
+  bank: string | null;
+} {
+  const raw = String(value ?? "");
+  const match = matchIssuer(raw);
+  return {
+    bin: binOf(raw),
+    bank: match.status === "accepted" ? match.issuer.name : null,
+  };
+}
