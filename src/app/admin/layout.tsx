@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import { getDb } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
+
+/**
+ * robots.txt already tells crawlers to stay out of /admin, but a disallowed URL
+ * can still be indexed from a link elsewhere — the crawler just never reads it.
+ * This header is what actually keeps the admin panel out of results.
+ */
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const user = await requireAdmin();

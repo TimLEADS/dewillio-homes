@@ -14,6 +14,15 @@ import { Container, SectionHeading } from "@/components/ui";
 import { Reveal, SpotlightCard } from "@/components/motion";
 import { PageHero } from "@/components/site/PageHero";
 import { PHOTOS } from "@/lib/images";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "How It Works",
+  description:
+    "The four steps of the Dewilio Homes referral program: activate your agent account for $1, get matched with local buyer and seller leads, work the lead, and pay a 20% referral fee only when the transaction closes.",
+  alternates: { canonical: "/how-it-works" },
+  openGraph: { url: "/how-it-works", title: "How It Works — Dewilio Homes" },
+};
 
 const PHASES = [
   {

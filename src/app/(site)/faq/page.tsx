@@ -4,6 +4,15 @@ import { Container } from "@/components/ui";
 import { Accordion, Reveal, SpotlightCard } from "@/components/motion";
 import { PageHero } from "@/components/site/PageHero";
 import { PHOTOS } from "@/lib/images";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Frequently Asked Questions",
+  description:
+    "Answers about the Dewilio Homes agent referral program: what the $1 activation fee covers, how the 20% referral fee works, licensing and brokerage requirements, and how leads are matched.",
+  alternates: { canonical: "/faq" },
+  openGraph: { url: "/faq", title: "Frequently Asked Questions — Dewilio Homes" },
+};
 
 const FAQS = [
   {

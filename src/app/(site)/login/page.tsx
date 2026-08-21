@@ -7,7 +7,14 @@ import { Container } from "@/components/ui";
 import { Reveal } from "@/components/motion";
 import { PHOTOS } from "@/lib/images";
 
-export const metadata: Metadata = { title: "Log In — Dewilio Homes" };
+// Reachable without an account, but not a page that should rank: it has no
+// content for a searcher, and ranking it above the homepage would send people
+// to a password prompt.
+export const metadata: Metadata = {
+  title: "Log In",
+  alternates: { canonical: "/login" },
+  robots: { index: false, follow: true },
+};
 
 export default function LoginPage() {
   return (

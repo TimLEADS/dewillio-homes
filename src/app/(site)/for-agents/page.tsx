@@ -15,6 +15,15 @@ import { Container, SectionHeading } from "@/components/ui";
 import { CountUp, Reveal, SpotlightCard } from "@/components/motion";
 import { PageHero } from "@/components/site/PageHero";
 import { AGENT_PORTRAITS, PHOTOS } from "@/lib/images";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "For Real Estate Agents",
+  description:
+    "Real estate leads with no monthly subscription and no upfront lead packages. Activate for $1, keep your own pipeline in the agent dashboard, and pay 20% only on referrals that close.",
+  alternates: { canonical: "/for-agents" },
+  openGraph: { url: "/for-agents", title: "For Real Estate Agents — Dewilio Homes" },
+};
 
 const BENEFITS = [
   {

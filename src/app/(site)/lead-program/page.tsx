@@ -17,6 +17,15 @@ import { Container, SectionHeading } from "@/components/ui";
 import { Reveal, SpotlightCard } from "@/components/motion";
 import { PageHero } from "@/components/site/PageHero";
 import { PHOTOS } from "@/lib/images";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "The Lead Program",
+  description:
+    "How Dewilio Homes sources and matches buyer and seller opportunities to licensed agents by market, specialty and capacity — and what the 20% closed-transaction referral fee covers.",
+  alternates: { canonical: "/lead-program" },
+  openGraph: { url: "/lead-program", title: "The Lead Program — Dewilio Homes" },
+};
 
 const MATCH_FACTORS = [
   { n: "01", icon: MapPin, factor: "ZIP code", body: "The lead's ZIP is matched against the ZIP codes you serve." },

@@ -1,6 +1,10 @@
+import type { Metadata } from "next";
 import { getDb } from "@/lib/db";
 import { requireAgent } from "@/lib/auth";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
+
+/** Private to the signed-in agent — never a search result. See the admin layout. */
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function DashboardLayout({ children }: LayoutProps<"/dashboard">) {
   const user = await requireAgent();

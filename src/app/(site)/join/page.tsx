@@ -4,7 +4,14 @@ import { JoinWizard } from "@/components/checkout/JoinWizard";
 import { Container } from "@/components/ui";
 import { Reveal } from "@/components/motion";
 
-export const metadata: Metadata = { title: "Activate for $1 — Dewilio Homes" };
+// The brand comes from the root layout's title template, so it isn't repeated here.
+export const metadata: Metadata = {
+  title: "Activate for $1",
+  description:
+    "Activate your Dewilio Homes agent account for a one-time $1 fee. No monthly subscription — you pay a 20% referral fee only when a referred transaction closes.",
+  alternates: { canonical: "/join" },
+  openGraph: { url: "/join", title: "Activate for $1 — Dewilio Homes" },
+};
 
 const ASSURANCES = [
   { icon: Wallet, label: "One-time $1 charge" },

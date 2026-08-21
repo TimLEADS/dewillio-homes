@@ -19,6 +19,17 @@ import {
 import { Container, SectionHeading } from "@/components/ui";
 import { Carousel, CountUp, Marquee, Parallax, Reveal, SpotlightCard } from "@/components/motion";
 import { AGENT_PORTRAITS, PHOTOS } from "@/lib/images";
+import type { Metadata } from "next";
+
+/**
+ * The homepage keeps the root layout's title verbatim — it is the page a search
+ * for the brand name should land on — but still declares its own canonical, so
+ * the live domain wins over any preview deployment serving the same content.
+ */
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: { url: "/" },
+};
 
 const TRUST_POINTS = [
   { icon: Wallet, label: "No monthly fee" },
