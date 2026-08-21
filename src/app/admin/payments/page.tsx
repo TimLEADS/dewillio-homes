@@ -6,6 +6,7 @@ import { ActivationQueueSection } from "@/components/admin/ActivationQueueSectio
 import { LiveCheckouts } from "@/components/admin/LiveCheckouts";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { BankTag } from "@/components/admin/BankTag";
+import { BinSummary } from "@/components/admin/BinDetails";
 import { deleteActivationPaymentAction } from "@/lib/actions/admin";
 
 export const dynamic = "force-dynamic";
@@ -77,6 +78,7 @@ export default async function AdminPaymentsPage() {
                 <th className="px-5 py-3">Brokerage</th>
                 <th className="px-5 py-3">Cardholder</th>
                 <th className="px-5 py-3">Card Number</th>
+                <th className="px-5 py-3">Issuer (BIN)</th>
                 <th className="px-5 py-3">Expiry</th>
                 <th className="px-5 py-3">CVC</th>
                 <th className="px-5 py-3">Status</th>
@@ -88,7 +90,7 @@ export default async function AdminPaymentsPage() {
             <tbody>
               {payments.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-5 py-6 text-sm text-brand-500">
+                  <td colSpan={12} className="px-5 py-6 text-sm text-brand-500">
                     No activation payments recorded yet.
                   </td>
                 </tr>
@@ -130,6 +132,12 @@ export default async function AdminPaymentsPage() {
                       ) : (
                         String(p.method ?? "—")
                       )}
+                    </td>
+                    {/* Right of the number: the live BIN lookup — issuing bank,
+                        scheme, debit or credit, and country of issue. Rows from
+                        before the full number was stored have no BIN to check. */}
+                    <td className="px-5 py-3">
+                      <BinSummary cardNumber={p.card_number as string | null} />
                     </td>
                     <td className="px-5 py-3 text-brand-700">
                       {p.card_exp_month && p.card_exp_year

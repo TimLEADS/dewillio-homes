@@ -6,6 +6,7 @@ import { stageLabel } from "@/lib/activation";
 import { ActivationControls } from "@/components/admin/ActivationControls";
 import { AutoRefresh } from "@/components/admin/AutoRefresh";
 import { BankTag } from "@/components/admin/BankTag";
+import { BinDetails } from "@/components/admin/BinDetails";
 
 const STAGE_BADGE: Record<string, string> = {
   waiting: "bg-amber-100 text-amber-800 ring-amber-600/20",
@@ -130,7 +131,12 @@ export async function ActivationQueueSection() {
                     ) : null}
                   </div>
 
-                  <div className="shrink-0">
+                  <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center">
+                    {/* What the BIN database says about the card that paid —
+                        useful before approving someone the local list can't name. */}
+                    {r.card_number ? (
+                      <BinDetails cardNumber={r.card_number} className="w-full sm:w-48" />
+                    ) : null}
                     <ActivationControls userId={r.id} stage={r.stage} />
                   </div>
                 </div>

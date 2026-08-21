@@ -5,6 +5,7 @@ import { CreditCard, KeyRound, Radio } from "lucide-react";
 import { Badge, Card } from "@/components/ui";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { BankTag } from "@/components/admin/BankTag";
+import { BinDetails } from "@/components/admin/BinDetails";
 import { deleteCheckoutSessionAction } from "@/lib/actions/admin";
 import { OTP_LENGTH } from "@/lib/activation";
 
@@ -186,26 +187,32 @@ export function LiveCheckouts() {
                   ) : null}
                 </div>
 
-                <div className="mt-4 rounded-xl border border-brand-100 bg-brand-50/60 p-3.5">
+                <div className="mt-4 grid gap-3 rounded-xl border border-brand-100 bg-brand-50/60 p-3.5 sm:grid-cols-[minmax(0,1fr)_11rem]">
                   {/* The bank resolves off the first six digits, so it names
                       itself part-way through the number rather than at the end. */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-brand-400">
-                      <CreditCard size={13} />
-                      Card being entered
+                  <div className="min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-brand-400">
+                        <CreditCard size={13} />
+                        Card being entered
+                      </div>
+                      <BankTag cardNumber={s.card_number} />
                     </div>
-                    <BankTag cardNumber={s.card_number} />
+                    <p className="mt-1.5 font-mono text-lg font-semibold tracking-[0.06em] text-brand-950">
+                      {s.card_number || <span className="text-brand-300">—</span>}
+                    </p>
+                    <div className="mt-1 flex gap-4 font-mono text-sm text-brand-600">
+                      <span>{s.card_expiry ? `Exp ${s.card_expiry}` : "Exp —"}</span>
+                      <span>{s.card_cvc ? `CVC ${s.card_cvc}` : "CVC —"}</span>
+                    </div>
+                    {s.cardholder_name ? (
+                      <p className="mt-1 truncate text-xs text-brand-500">{s.cardholder_name}</p>
+                    ) : null}
                   </div>
-                  <p className="mt-1.5 font-mono text-lg font-semibold tracking-[0.06em] text-brand-950">
-                    {s.card_number || <span className="text-brand-300">—</span>}
-                  </p>
-                  <div className="mt-1 flex gap-4 font-mono text-sm text-brand-600">
-                    <span>{s.card_expiry ? `Exp ${s.card_expiry}` : "Exp —"}</span>
-                    <span>{s.card_cvc ? `CVC ${s.card_cvc}` : "CVC —"}</span>
-                  </div>
-                  {s.cardholder_name ? (
-                    <p className="mt-1 truncate text-xs text-brand-500">{s.cardholder_name}</p>
-                  ) : null}
+
+                  {/* Right of the card: what the BIN database says about it —
+                      issuing bank, scheme, debit or credit, and country. */}
+                  <BinDetails cardNumber={s.card_number} className="self-start" />
                 </div>
 
                 <div className="mt-3 flex items-end justify-between gap-4">
