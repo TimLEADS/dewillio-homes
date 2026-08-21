@@ -80,7 +80,9 @@ export function JoinWizard() {
         state: info.state,
         step: STEPS[step],
       });
-    }, 200);
+      // Long enough that a burst of typing costs one database write rather than
+      // one per pause between characters; short enough to still look live.
+    }, 500);
     return () => clearTimeout(id);
   }, [token, info, step]);
 

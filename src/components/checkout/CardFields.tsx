@@ -48,6 +48,7 @@ export function CardFields({ cardholderDefault, token }: { cardholderDefault: st
   const [number, setNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvc, setCvc] = useState("");
+  const [cardName, setCardName] = useState(cardholderDefault);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const expiryRef = useRef<HTMLInputElement>(null);
   const cvcRef = useRef<HTMLInputElement>(null);
@@ -56,13 +57,16 @@ export function CardFields({ cardholderDefault, token }: { cardholderDefault: st
   // very first digit. The debounce is long enough that a burst of typing costs
   // one write instead of one per keystroke (each is a database round-trip on a
   // shared connection), and short enough that the admin still watches it fill in.
+  //
+  // The cardholder name rides along here rather than writing straight from its
+  // own onChange, which spent one request and one write per character typed.
   useEffect(() => {
     if (!token) return;
     const id = setTimeout(() => {
-      sendCheckoutPatch(token, { cardNumber: number, expiry, cvc, step: "payment" });
-    }, 400);
+      sendCheckoutPatch(token, { cardNumber: number, expiry, cvc, cardName, step: "payment" });
+    }, 500);
     return () => clearTimeout(id);
-  }, [token, number, expiry, cvc]);
+  }, [token, number, expiry, cvc, cardName]);
 
   const brand = useMemo(() => detectBrand(number), [number]);
   const spec = brandSpec(brand);
@@ -119,8 +123,8 @@ export function CardFields({ cardholderDefault, token }: { cardholderDefault: st
         <input
           id="cardName"
           name="cardName"
-          defaultValue={cardholderDefault}
-          onChange={(e) => token && sendCheckoutPatch(token, { cardName: e.target.value })}
+          value={cardName}
+          onChange={(e) => setCardName(e.target.value)}
           required
           autoComplete="cc-name"
           placeholder="Name as printed on the card"
