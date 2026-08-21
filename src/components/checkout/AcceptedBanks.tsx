@@ -1,4 +1,4 @@
-import { CardMark } from "@/components/checkout/CardMark";
+import { BankLogo } from "@/components/checkout/BankLogo";
 import { ACCEPTED_ISSUERS } from "@/lib/issuers";
 import { Landmark } from "lucide-react";
 
@@ -31,10 +31,10 @@ export function AcceptedBanks() {
         {ACCEPTED_ISSUERS.map((issuer) => (
           <li
             key={issuer.name}
-            className="flex items-center gap-2 rounded-lg border border-brand-100 bg-brand-50/60 px-2.5 py-2"
+            className="flex items-center gap-2 rounded-lg border border-brand-100 bg-white px-2.5 py-2"
           >
-            <CardMark brand={issuer.brand} dim />
-            <span className="truncate text-xs font-semibold text-brand-700">{issuer.name}</span>
+            <BankLogo name={issuer.name} className="h-6 w-6" />
+            <span className="truncate text-xs font-semibold text-brand-800">{issuer.name}</span>
           </li>
         ))}
       </ul>

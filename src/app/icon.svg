@@ -1,0 +1,15 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dw-sheen" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#c9a44a" stop-opacity="0.45" />
+      <stop offset="0.5" stop-color="#0b1f3a" stop-opacity="0" />
+      <stop offset="1" stop-color="#6998c9" stop-opacity="0.35" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="#0b1f3a" />
+  <rect width="32" height="32" rx="8" fill="url(#dw-sheen)" />
+  <g transform="translate(6.5 6.5) scale(0.79)" fill="none" stroke="#d8b45c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <path d="M9 22V12h6v10" />
+  </g>
+</svg>
