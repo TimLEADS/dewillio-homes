@@ -53,7 +53,7 @@ export default async function AdminPaymentsPage() {
       <div>
         <h1 className="font-serif text-2xl font-bold text-brand-950">Activation Payments</h1>
         <p className="mt-1 text-sm text-brand-500">
-          Every $1 account activation, with the agent and payment reference.
+          Every $1.99 account activation, with the agent and payment reference.
         </p>
       </div>
 
@@ -67,7 +67,7 @@ export default async function AdminPaymentsPage() {
       <ActivationQueueSection />
 
       <h2 className="mt-10 font-serif text-lg font-bold text-brand-950">Payment History</h2>
-      <p className="mt-0.5 text-sm text-brand-500">Every recorded $1 activation charge.</p>
+      <p className="mt-0.5 text-sm text-brand-500">Every recorded $1.99 activation charge.</p>
 
       <Card className="mt-4 !p-0">
         <div className="overflow-x-auto">
@@ -193,7 +193,7 @@ export default async function AdminPaymentsPage() {
       </Card>
 
       <p className="mt-6 text-xs leading-relaxed text-brand-400">
-        The $1 activation fee is a one-time account activation charge, not a subscription.
+        The $1.99 activation fee is a one-time account activation charge, not a subscription.
         Removing a row here deletes the payment record only — the agent&rsquo;s account stays as it is.
       </p>
     </Container>

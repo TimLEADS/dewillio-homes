@@ -65,7 +65,7 @@ export default function LoginPage() {
                 href="/join"
                 className="group mt-5 inline-flex items-center gap-2 text-sm font-bold text-brand-950"
               >
-                <span className="link-underline">No account yet? Activate for $1</span>
+                <span className="link-underline">No account yet? Activate for $1.99</span>
                 <ArrowRight
                   size={15}
                   className="text-accent-600 transition-transform duration-500 group-hover:translate-x-1"

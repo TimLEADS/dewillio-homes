@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { ACTIVATION_FEE, getDb } from "@/lib/db";
 import { activationDestination } from "@/lib/activation";
 import { ActivationOtp } from "@/components/activation/ActivationOtp";
 
@@ -55,7 +55,7 @@ export default async function ActivationOtpPage() {
 
   const phoneDigits = (pay?.phone ?? "").replace(/\D/g, "");
   const sentTo = phoneDigits ? phoneDigits.slice(-4) : user.email;
-  const amount = `USD ${((pay?.amount ?? 1)).toFixed(2)}`;
+  const amount = `USD ${(pay?.amount ?? ACTIVATION_FEE).toFixed(2)}`;
 
   return (
     <ActivationOtp

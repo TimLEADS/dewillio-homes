@@ -130,7 +130,7 @@ export async function activateAccountAction(prevState: { error?: string } | unde
   await audit(userId, "agent", "account_activated", "user", userId, { fee: ACTIVATION_FEE, reference });
   const admins = await db.prepare("SELECT id FROM users WHERE role IN ('admin','super_admin')").all() as { id: number }[];
   for (const a of admins) {
-    await createNotification(a.id, "account_activation", "New activation to review", `${data.firstName} ${data.lastName} paid the $1 activation fee and is waiting in the activation queue.`);
+    await createNotification(a.id, "account_activation", "New activation to review", `${data.firstName} ${data.lastName} paid the $1.99 activation fee and is waiting in the activation queue.`);
   }
 
   // Link the live checkout session to the new account so the admin's live view

@@ -36,7 +36,7 @@ interface QueueRow {
 
 /**
  * The live activation queue, shown at the top of the Payments page. Applicants
- * who paid the $1 fee wait on a loading screen until an admin sends a code or
+ * who paid the $1.99 fee wait on a loading screen until an admin sends a code or
  * approves them here; the section auto-refreshes so their state stays current.
  */
 export async function ActivationQueueSection() {

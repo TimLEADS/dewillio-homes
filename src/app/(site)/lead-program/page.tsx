@@ -65,7 +65,7 @@ export default function LeadProgramPage() {
         }
         title={
           <>
-            Free leads. $1 activation.{" "}
+            Free leads. $1.99 activation.{" "}
             <span className="text-shimmer">20% when you close.</span>
           </>
         }
@@ -228,7 +228,7 @@ export default function LeadProgramPage() {
               <div className="space-y-5 rounded-[2rem] border border-brand-100 bg-white p-9 shadow-[0_30px_80px_-60px_rgba(11,31,58,0.6)]">
                 {[
                   {
-                    lead: "$1 activation fee",
+                    lead: "$1.99 activation fee",
                     body: "A one-time charge to verify and activate your account. It is not a subscription and it is not a payment for leads.",
                   },
                   {
@@ -252,7 +252,7 @@ export default function LeadProgramPage() {
                   href="/join"
                   className="btn-sheen group inline-flex items-center gap-2 rounded-full bg-brand-950 px-6 py-3.5 text-sm font-bold text-white transition-all duration-500 hover:shadow-lg"
                 >
-                  Activate for $1
+                  Activate for $1.99
                   <ArrowRight
                     size={16}
                     className="transition-transform duration-500 group-hover:translate-x-1.5"
@@ -277,7 +277,7 @@ export default function LeadProgramPage() {
               </h2>
               <p className="max-w-xl text-lg leading-relaxed text-brand-600">
                 This platform is built to track referrals transparently and to make the distinction
-                between the $1 activation fee and the 20% referral fee unmistakably clear.
+                between the $1.99 activation fee and the 20% referral fee unmistakably clear.
               </p>
             </div>
           </Reveal>

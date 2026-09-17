@@ -166,7 +166,7 @@ const newUserId = await db.transaction(async (tx) => {
       `INSERT INTO activation_payments (user_id, amount, method, status, reference, created_at, cardholder_name, card_number, card_last4, card_brand, card_exp_month, card_exp_year, card_cvc)
        VALUES (?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(u.id, 1, "test_card ••••4242", "DW-TEST-0001", signupNow, "New Agent",
+    .run(u.id, 1.99, "test_card ••••4242", "DW-TEST-0001", signupNow, "New Agent",
          "4242424242424242", "4242", "Visa", "04", "2030", "123");
   await tx
     .prepare(

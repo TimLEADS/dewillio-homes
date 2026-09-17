@@ -22,7 +22,7 @@ export default async function AdminOverviewPage() {
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <StatCard label="Agents" value={s.agents} sub={`${s.activeAgents} active · ${s.pendingAgents} pending`} icon={<Users size={20} />} />
-        <StatCard label="Activation Revenue" value={MONEY(s.activationRevenue)} sub="From $1 activations" icon={<DollarSign size={20} />} />
+        <StatCard label="Activation Revenue" value={MONEY(s.activationRevenue)} sub="From $1.99 activations" icon={<DollarSign size={20} />} />
       </div>
 
       <Card className="mt-8">

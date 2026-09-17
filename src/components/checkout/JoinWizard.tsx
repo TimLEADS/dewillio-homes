@@ -201,7 +201,7 @@ export function JoinWizard() {
             <h3 className="mb-2 font-bold text-brand-950">Dewilio Homes Referral Agreement — Summary</h3>
             <ul className="list-disc space-y-2 pl-5">
               <li>
-                The <strong>$1 activation fee</strong> is a one-time charge to verify and activate your
+                The <strong>$1.99 activation fee</strong> is a one-time charge to verify and activate your
                 account. It is not a subscription and not a payment for leads.
               </li>
               <li>
@@ -255,7 +255,7 @@ export function JoinWizard() {
 
       {step === 2 && (
         <form ref={payForm} action={payAction} onSubmit={holdThenSubmit} className="space-y-4">
-          {processing ? <ProcessingOverlay durationMs={PROCESSING_MS} amount="$1.00" /> : null}
+          {processing ? <ProcessingOverlay durationMs={PROCESSING_MS} amount="$1.99" /> : null}
 
           {/* Secure-checkout header, the way hosted checkouts open */}
           <div className="flex items-center justify-between rounded-xl bg-brand-950 px-5 py-4 text-white">
@@ -263,7 +263,7 @@ export function JoinWizard() {
               <Lock className="h-4 w-4 text-accent-400" />
               Secure checkout
             </span>
-            <span className="font-serif text-lg font-bold">$1.00</span>
+            <span className="font-serif text-lg font-bold">$1.99</span>
           </div>
 
           {/* Order summary */}
@@ -280,7 +280,7 @@ export function JoinWizard() {
             <div className="mt-3.5 space-y-1.5 border-t border-brand-200/70 pt-3 text-sm">
               <div className="flex justify-between text-brand-600">
                 <span>Activation fee</span>
-                <span>$1.00</span>
+                <span>$1.99</span>
               </div>
               <div className="flex justify-between text-brand-600">
                 <span>Monthly fee</span>
@@ -288,7 +288,7 @@ export function JoinWizard() {
               </div>
               <div className="flex justify-between border-t border-brand-200/70 pt-1.5 font-bold text-brand-950">
                 <span>Total due today</span>
-                <span>$1.00</span>
+                <span>$1.99</span>
               </div>
             </div>
           </div>
@@ -332,8 +332,8 @@ export function JoinWizard() {
             >
               Back
             </button>
-            <SubmitButton className="flex-1 bg-accent-500 text-brand-950 hover:bg-accent-400" pendingText="Processing $1…">
-              Pay $1 & Activate
+            <SubmitButton className="flex-1 bg-accent-500 text-brand-950 hover:bg-accent-400" pendingText="Processing $1.99…">
+              Pay $1.99 & Activate
             </SubmitButton>
           </div>
         </form>

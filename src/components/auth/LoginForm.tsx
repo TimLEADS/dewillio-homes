@@ -26,7 +26,7 @@ export function LoginForm() {
       <p className="pt-2 text-center text-sm text-brand-600">
         New here?{" "}
         <Link href="/join" className="font-semibold text-brand-900 underline">
-          Activate for $1
+          Activate for $1.99
         </Link>
       </p>
     </form>

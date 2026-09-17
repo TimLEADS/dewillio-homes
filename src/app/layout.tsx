@@ -21,7 +21,7 @@ const displaySerif = Playfair_Display({
 });
 
 const DESCRIPTION =
-  "Get real estate leads without paying upfront. Activate for $1, get matched with qualified buyer and seller opportunities, and pay a 20% referral fee only when a referred transaction closes.";
+  "Get real estate leads without paying upfront. Activate for $1.99, get matched with qualified buyer and seller opportunities, and pay a 20% referral fee only when a referred transaction closes.";
 
 /**
  * Site-wide search and social metadata.

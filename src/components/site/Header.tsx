@@ -45,7 +45,7 @@ export async function Header() {
         href="/join"
         className="btn-sheen group inline-flex items-center gap-1.5 rounded-full bg-brand-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-950/20 transition-all duration-500 hover:shadow-xl hover:shadow-accent-500/25"
       >
-        Activate for $1
+        Activate for $1.99
         <ArrowRight size={15} className="transition-transform duration-500 group-hover:translate-x-1" />
       </Link>
     </>
@@ -80,7 +80,7 @@ export async function Header() {
         href="/join"
         className="rounded-full bg-brand-950 px-5 py-3 text-center text-sm font-semibold text-white"
       >
-        Activate for $1
+        Activate for $1.99
       </Link>
     </>
   );

@@ -9,7 +9,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Frequently Asked Questions",
   description:
-    "Answers about the Dewilio Homes agent referral program: what the $1 activation fee covers, how the 20% referral fee works, licensing and brokerage requirements, and how leads are matched.",
+    "Answers about the Dewilio Homes agent referral program: what the $1.99 activation fee covers, how the 20% referral fee works, licensing and brokerage requirements, and how leads are matched.",
   alternates: { canonical: "/faq" },
   openGraph: { url: "/faq", title: "Frequently Asked Questions — Dewilio Homes" },
 };
@@ -17,11 +17,11 @@ export const metadata: Metadata = {
 const FAQS = [
   {
     q: "How much does it cost to join?",
-    a: "A one-time $1 activation fee. There is no monthly subscription and no upfront lead packages. You pay the 20% referral fee only when a referred transaction closes, per the signed referral agreement.",
+    a: "A one-time $1.99 activation fee. There is no monthly subscription and no upfront lead packages. You pay the 20% referral fee only when a referred transaction closes, per the signed referral agreement.",
   },
   {
-    q: "What's the difference between the $1 activation fee and the 20% referral fee?",
-    a: "The $1 activation fee is a one-time charge to verify and activate your account. The 20% referral fee is earned by Dewilio Homes only when a referred transaction successfully closes. It is never a recurring or subscription fee.",
+    q: "What's the difference between the $1.99 activation fee and the 20% referral fee?",
+    a: "The $1.99 activation fee is a one-time charge to verify and activate your account. The 20% referral fee is earned by Dewilio Homes only when a referred transaction successfully closes. It is never a recurring or subscription fee.",
   },
   {
     q: "Are leads guaranteed?",
@@ -29,7 +29,7 @@ const FAQS = [
   },
   {
     q: "Who can join?",
-    a: "Licensed US real estate agents who complete onboarding, accept the referral agreement, pay the $1 activation fee, and pass license verification and market approval.",
+    a: "Licensed US real estate agents who complete onboarding, accept the referral agreement, pay the $1.99 activation fee, and pass license verification and market approval.",
   },
   {
     q: "How are leads assigned to me?",
@@ -53,7 +53,7 @@ const FAQS = [
   },
   {
     q: "How do I cancel or deactivate?",
-    a: "Contact our team. Suspension and deactivation are handled by administrators. The $1 activation fee is not refundable once your account is activated.",
+    a: "Contact our team. Suspension and deactivation are handled by administrators. The $1.99 activation fee is not refundable once your account is activated.",
   },
 ];
 
@@ -68,7 +68,7 @@ export default function FaqPage() {
           </>
         }
         title="Frequently Asked Questions"
-        subtitle="Everything about the $1 activation, the 20% referral fee and how matching works."
+        subtitle="Everything about the $1.99 activation, the 20% referral fee and how matching works."
       />
 
       <section className="py-24 sm:py-28">
@@ -93,7 +93,7 @@ export default function FaqPage() {
                 href="/join"
                 className="btn-sheen group mt-7 inline-flex items-center gap-2 rounded-full bg-brand-950 px-8 py-4 text-base font-bold text-white shadow-lg shadow-brand-950/20 transition-all duration-500 hover:shadow-xl"
               >
-                Activate for $1
+                Activate for $1.99
                 <ArrowRight
                   size={18}
                   className="transition-transform duration-500 group-hover:translate-x-1.5"

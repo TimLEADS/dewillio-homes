@@ -41,7 +41,7 @@ const TRUST_POINTS = [
 const HEADLINE = ["A", "modern", "referral", "engine", "for", "agents", "who", "close."];
 
 const STATS = [
-  { value: 1, prefix: "$", suffix: "", label: "One-time activation", detail: "Not a subscription." },
+  { value: 1.99, prefix: "$", suffix: "", label: "One-time activation", detail: "Not a subscription." },
   { value: 0, prefix: "$", suffix: "/mo", label: "Monthly software fee", detail: "Nothing recurring, ever." },
   { value: 20, prefix: "", suffix: "%", label: "Referral fee", detail: "Only on closed transactions." },
   { value: 7, prefix: "", suffix: "", label: "Matching signals", detail: "ZIP, type, specialty & more." },
@@ -65,7 +65,7 @@ const STEPS = [
     num: "01",
     icon: DollarSign,
     title: "Activate",
-    body: "Pay $1 to activate your Dewilio Homes account. No subscriptions. No lead packages.",
+    body: "Pay $1.99 to activate your Dewilio Homes account. No subscriptions. No lead packages.",
     photo: PHOTOS.signing,
   },
   {
@@ -114,7 +114,7 @@ const PROMISES = [
 
 const FAQ_PREVIEW = [
   {
-    q: "What exactly does the $1 pay for?",
+    q: "What exactly does the $1.99 pay for?",
     a: "It is a one-time charge that verifies and activates your account. It is not a subscription and it is not a payment for leads.",
   },
   {
@@ -178,7 +178,7 @@ export default function HomePage() {
                 style={{ "--rise-delay": "900ms" } as React.CSSProperties}
               >
                 Activate your account for just{" "}
-                <strong className="font-semibold text-white">$1</strong>, receive qualified local
+                <strong className="font-semibold text-white">$1.99</strong>, receive qualified local
                 matches, and pay a referral fee only when a referred transaction closes.
               </p>
 
@@ -190,7 +190,7 @@ export default function HomePage() {
                   href="/join"
                   className="btn-sheen group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-accent-400 via-accent-500 to-accent-600 px-8 py-4 text-base font-bold text-brand-975 shadow-[0_20px_50px_-16px_rgba(201,164,74,0.85)] transition-all duration-500 hover:shadow-[0_26px_60px_-14px_rgba(201,164,74,0.95)]"
                 >
-                  Activate for $1
+                  Activate for $1.99
                   <ArrowRight
                     size={18}
                     className="transition-transform duration-500 group-hover:translate-x-1.5"
@@ -296,7 +296,7 @@ export default function HomePage() {
               {/* Small floating chips */}
               <div className="animate-float absolute -left-4 bottom-16 hidden rounded-2xl border border-white/12 bg-brand-975/85 px-4 py-3 backdrop-blur-xl sm:block">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-brand-300">Activation</p>
-                <p className="font-display text-xl font-bold text-white">$1.00</p>
+                <p className="font-display text-xl font-bold text-white">$1.99</p>
               </div>
               <div
                 className="animate-float absolute -right-2 top-10 hidden rounded-2xl border border-white/12 bg-brand-975/85 px-4 py-3 backdrop-blur-xl sm:block"
@@ -370,7 +370,7 @@ export default function HomePage() {
                 <Sparkles size={13} /> How it works
               </p>
               <h2 className="font-display text-4xl font-bold leading-tight sm:text-5xl">
-                From a $1 activation to a closed referral — in four steps.
+                From a $1.99 activation to a closed referral — in four steps.
               </h2>
               <p className="mt-5 text-lg leading-relaxed text-brand-300">
                 Activate, get matched, work the lead, and pay only when a referred transaction
@@ -415,7 +415,7 @@ export default function HomePage() {
           <Reveal delay={200}>
             <div className="mt-12 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-4">
               <Marquee duration={34} gap="1.25rem">
-                {["Agent", "$1 activation", "Lead matching", "Appointment", "Under contract", "Closing", "20% referral fee"].map(
+                {["Agent", "$1.99 activation", "Lead matching", "Appointment", "Under contract", "Closing", "20% referral fee"].map(
                   (node) => (
                     <span
                       key={node}
@@ -539,7 +539,7 @@ export default function HomePage() {
             <SectionHeading
               eyebrow="Why agents join"
               title="Pay us when you make money — not before."
-              subtitle="Why spend $500–$2,000 on lead packages when you can activate for $1 and let us earn only when you earn?"
+              subtitle="Why spend $500–$2,000 on lead packages when you can activate for $1.99 and let us earn only when you earn?"
               center
             />
           </Reveal>
@@ -566,7 +566,7 @@ export default function HomePage() {
                   </h3>
                   <p className="mt-4 max-w-sm text-base leading-relaxed text-brand-300">
                     Skip the $500–$2,000 bundles that charge you whether or not the lead ever picks
-                    up the phone. Start for a one-time $1 activation.
+                    up the phone. Start for a one-time $1.99 activation.
                   </p>
                 </div>
               </SpotlightCard>
@@ -588,7 +588,7 @@ export default function HomePage() {
                 </div>
                 <div className="mt-8 space-y-3">
                   {[
-                    { k: "Activation", v: "$1 once" },
+                    { k: "Activation", v: "$1.99 once" },
                     { k: "Monthly", v: "$0" },
                     { k: "On closing", v: "20%" },
                   ].map((row) => (
@@ -734,7 +734,7 @@ export default function HomePage() {
                 Pricing
               </p>
               <h2 className="font-display text-4xl font-bold leading-tight sm:text-5xl">
-                One dollar in. <span className="text-shimmer">Twenty percent</span> only when it
+                $1.99 in. <span className="text-shimmer">Twenty percent</span> only when it
                 closes.
               </h2>
               <p className="mt-5 max-w-md text-lg leading-relaxed text-brand-300">
@@ -743,7 +743,7 @@ export default function HomePage() {
               </p>
               <div className="mt-9 space-y-3">
                 {[
-                  "One-time $1 account activation",
+                  "One-time $1.99 account activation",
                   "$0 per month, forever",
                   "20% referral fee on closed referred transactions",
                   "Cancel-free — nothing recurring to cancel",
@@ -771,7 +771,7 @@ export default function HomePage() {
                   <div className="mt-8 flex items-end justify-center gap-1.5">
                     <span className="pb-3 font-display text-2xl font-medium text-brand-300">$</span>
                     <span className="font-display text-[6rem] font-bold leading-none text-white">
-                      1
+                      1.99
                     </span>
                     <span className="pb-4 text-sm font-medium text-brand-300">once</span>
                   </div>
@@ -894,7 +894,7 @@ export default function HomePage() {
               href="/join"
               className="btn-sheen group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-accent-400 via-accent-500 to-accent-600 px-9 py-4 text-base font-bold text-brand-975 shadow-[0_22px_55px_-18px_rgba(201,164,74,0.9)] transition-all duration-500"
             >
-              Activate for $1
+              Activate for $1.99
               <ArrowRight
                 size={18}
                 className="transition-transform duration-500 group-hover:translate-x-1.5"

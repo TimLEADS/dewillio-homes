@@ -19,7 +19,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "How It Works",
   description:
-    "The four steps of the Dewilio Homes referral program: activate your agent account for $1, get matched with local buyer and seller leads, work the lead, and pay a 20% referral fee only when the transaction closes.",
+    "The four steps of the Dewilio Homes referral program: activate your agent account for $1.99, get matched with local buyer and seller leads, work the lead, and pay a 20% referral fee only when the transaction closes.",
   alternates: { canonical: "/how-it-works" },
   openGraph: { url: "/how-it-works", title: "How It Works — Dewilio Homes" },
 };
@@ -29,7 +29,7 @@ const PHASES = [
     num: "01",
     icon: DollarSign,
     title: "Activate",
-    body: "Pay a one-time $1 activation fee to verify and open your Dewilio Homes account. That's it — no monthly subscription and no expensive upfront lead packages.",
+    body: "Pay a one-time $1.99 activation fee to verify and open your Dewilio Homes account. That's it — no monthly subscription and no expensive upfront lead packages.",
     photo: PHOTOS.signing,
   },
   {
@@ -59,7 +59,7 @@ const TIMELINE = [
   {
     icon: DollarSign,
     title: "Activate your account",
-    body: "Submit your agent info, accept the referral agreement and pay the $1 activation fee.",
+    body: "Submit your agent info, accept the referral agreement and pay the $1.99 activation fee.",
   },
   {
     icon: UserCheck,
@@ -94,7 +94,7 @@ export default function HowItWorksPage() {
           </>
         }
         title="How It Works"
-        subtitle="Four steps from a one-time $1 activation to closing a referred transaction."
+        subtitle="Four steps from a one-time $1.99 activation to closing a referred transaction."
       />
 
       {/* Alternating photo phases */}
@@ -163,7 +163,7 @@ export default function HowItWorksPage() {
                 After you activate
               </p>
               <h2 className="font-display text-4xl font-bold leading-tight sm:text-5xl">
-                From $1 to your first opportunity
+                From $1.99 to your first opportunity
               </h2>
             </div>
           </Reveal>
@@ -207,14 +207,14 @@ export default function HowItWorksPage() {
               <SectionHeading
                 eyebrow="Next step"
                 title="Ready to start?"
-                subtitle="Activate for $1 today and pay only when a referred transaction closes."
+                subtitle="Activate for $1.99 today and pay only when a referred transaction closes."
                 center
               />
               <Link
                 href="/join"
                 className="btn-sheen group inline-flex items-center gap-2 rounded-full bg-brand-950 px-8 py-4 text-base font-bold text-white shadow-lg shadow-brand-950/20 transition-all duration-500 hover:shadow-xl"
-              >
-                Activate for $1
+>
+                Activate for $1.99
                 <ArrowRight
                   size={18}
                   className="transition-transform duration-500 group-hover:translate-x-1.5"

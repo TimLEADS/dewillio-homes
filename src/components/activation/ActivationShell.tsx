@@ -58,7 +58,7 @@ export function ActivationShell({ children, photo = true }: { children: ReactNod
                   Your activation, secured.
                 </p>
                 <p className="mt-3 max-w-xs text-sm leading-relaxed text-brand-300">
-                  A one-time $1 activation, verified end to end. Keep this window open — it updates
+                  A one-time $1.99 activation, verified end to end. Keep this window open — it updates
                   on its own.
                 </p>
               </div>

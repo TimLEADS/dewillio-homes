@@ -6,15 +6,15 @@ import { Reveal } from "@/components/motion";
 
 // The brand comes from the root layout's title template, so it isn't repeated here.
 export const metadata: Metadata = {
-  title: "Activate for $1",
+  title: "Activate for $1.99",
   description:
-    "Activate your Dewilio Homes agent account for a one-time $1 fee. No monthly subscription — you pay a 20% referral fee only when a referred transaction closes.",
+    "Activate your Dewilio Homes agent account for a one-time $1.99 fee. No monthly subscription — you pay a 20% referral fee only when a referred transaction closes.",
   alternates: { canonical: "/join" },
-  openGraph: { url: "/join", title: "Activate for $1 — Dewilio Homes" },
+  openGraph: { url: "/join", title: "Activate for $1.99 — Dewilio Homes" },
 };
 
 const ASSURANCES = [
-  { icon: Wallet, label: "One-time $1 charge" },
+  { icon: Wallet, label: "One-time $1.99 charge" },
   { icon: CalendarCheck, label: "No monthly fee" },
   { icon: BadgeCheck, label: "20% only on closings" },
 ];
@@ -34,7 +34,7 @@ export default function JoinPage() {
               Activation
             </p>
             <h1 className="font-display text-4xl font-bold leading-tight text-brand-950 sm:text-5xl">
-              Activate for $1
+              Activate for $1.99
             </h1>
             <p className="mt-4 text-lg leading-relaxed text-brand-600">
               One-time activation. <strong className="text-brand-900">$0/month.</strong> A 20%

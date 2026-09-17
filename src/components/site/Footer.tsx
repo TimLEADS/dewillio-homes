@@ -18,7 +18,7 @@ const LINK_GROUPS = [
   {
     heading: "Account",
     links: [
-      { href: "/join", label: "Activate for $1" },
+      { href: "/join", label: "Activate for $1.99" },
       { href: "/login", label: "Agent Log in" },
       { href: "/lead-program#referral-agreement", label: "Referral Agreement" },
     ],
@@ -57,7 +57,7 @@ export function Footer() {
                 href="/join"
                 className="btn-sheen inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-accent-400 via-accent-500 to-accent-600 px-7 py-4 text-base font-bold text-brand-975 shadow-[0_20px_50px_-18px_rgba(201,164,74,0.9)] transition-all duration-500"
               >
-                Activate for $1
+Activate for $1.99
                 <ArrowRight size={17} className="transition-transform duration-500 group-hover:translate-x-1" />
               </Link>
             </div>
@@ -76,12 +76,12 @@ export function Footer() {
               </span>
             </Link>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-brand-600">
-              Free-to-start real estate referral program. Activate for $1, get matched with
+              Free-to-start real estate referral program. Activate for $1.99, get matched with
               qualified opportunities, and pay a 20% referral fee only when a referred transaction
               closes.
             </p>
             <div className="mt-6 flex flex-wrap gap-2.5">
-              {["$1 once", "$0 / month", "20% on closing"].map((chip) => (
+              {["$1.99 once", "$0 / month", "20% on closing"].map((chip) => (
                 <span
                   key={chip}
                   className="rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-700"
@@ -115,7 +115,7 @@ export function Footer() {
 
         <div className="border-t border-brand-100 pt-8 text-sm leading-relaxed text-brand-500">
           <p>
-            Dewilio Homes is a real estate referral program. The $1 activation fee is a one-time
+            Dewilio Homes is a real estate referral program. The $1.99 activation fee is a one-time
             account activation charge — it is not a subscription. Leads are not guaranteed. A 20%
             referral fee applies to referred transactions that close, according to the signed
             referral agreement and applicable state and brokerage rules.

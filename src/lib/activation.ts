@@ -1,5 +1,5 @@
 /**
- * The activation gate an applicant passes through after paying the $1 fee.
+ * The activation gate an applicant passes through after paying the $1.99 fee.
  *
  * A new signup lands on `waiting` and the browser holds on a live loading
  * screen. An admin, watching the queue on /admin/payments, chooses where to
