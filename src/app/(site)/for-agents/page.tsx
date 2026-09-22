@@ -20,7 +20,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "For Real Estate Agents",
   description:
-    "Real estate leads with no monthly subscription and no upfront lead packages. Activate for $1.99, keep your own pipeline in the agent dashboard, and pay 20% only on referrals that close.",
+    "Real estate leads with no monthly subscription and no upfront lead packages. Activate for $49.99, keep your own pipeline in the agent dashboard, and pay 20% only on referrals that close.",
   alternates: { canonical: "/for-agents" },
   openGraph: { url: "/for-agents", title: "For Real Estate Agents — Dewilio Homes" },
 };
@@ -28,8 +28,8 @@ export const metadata: Metadata = {
 const BENEFITS = [
   {
     icon: DollarSign,
-    title: "One-time $1.99 activation",
-    body: "A single $1.99 activation verifies your account. There is no monthly software fee and no minimum lead spend.",
+    title: "One-time $49.99 activation",
+    body: "A single $49.99 activation verifies your account. There is no monthly software fee and no minimum lead spend.",
   },
   {
     icon: BadgeCheck,
@@ -114,7 +114,7 @@ export default function ForAgentsPage() {
           <Reveal>
             <SectionHeading
               eyebrow="The pitch"
-              title="Why pay $500–$2,000 for leads when you can activate for $1.99?"
+              title="Why pay $500–$2,000 for leads when you can activate for $49.99?"
               subtitle="Lead packages charge you whether or not the phone ever rings. A referral fee only lands when a transaction does."
             />
           </Reveal>
@@ -161,7 +161,7 @@ export default function ForAgentsPage() {
               </p>
               <h2 className="font-display text-4xl font-bold leading-tight sm:text-5xl">
                 Your risk before the first closing:{" "}
-                <span className="text-shimmer">$1.99 and change.</span>
+                <span className="text-shimmer">$49.99 and change.</span>
               </h2>
               <p className="mt-5 max-w-md text-lg leading-relaxed text-brand-300">
                 Everything else is contingent on a referred transaction actually closing. That is
@@ -189,7 +189,7 @@ export default function ForAgentsPage() {
                     Dewilio Homes
                   </p>
                   <p className="relative mt-3 font-display text-5xl font-bold text-white">
-                    $<CountUp to={1} duration={1200} />
+                    $<CountUp to={49.99} duration={1200} />
                   </p>
                   <p className="relative mt-2 text-sm text-brand-200">
                     One-time activation. Then 20% only on a closed referral.
@@ -244,7 +244,7 @@ export default function ForAgentsPage() {
                 href="/join"
                 className="btn-sheen group mt-8 inline-flex items-center gap-2 rounded-full bg-brand-950 px-8 py-4 text-base font-bold text-white shadow-lg shadow-brand-950/20 transition-all duration-500 hover:shadow-xl"
 >
-                Activate for $1.99
+                Activate for $49.99
                 <ArrowRight
                   size={18}
                   className="transition-transform duration-500 group-hover:translate-x-1.5"

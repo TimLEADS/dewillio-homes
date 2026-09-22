@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { getPg, setInitializer, type Db } from "./pg";
 
-export const ACTIVATION_FEE = 1.99;
+export const ACTIVATION_FEE = 49.99;
 export const REFERRAL_FEE_RATE = 0.2;
 export const AGREEMENT_VERSION = "1.0";
 export const DEFAULT_RESPONSE_SLA_HOURS = 24;
@@ -10,7 +10,7 @@ export const REFERRAL_AGREEMENT_BODY = `1. PARTIES AND PURPOSE
 This Referral Agreement ("Agreement") is entered into between Dewilio Homes ("Dewilio") and the licensed real estate agent identified at activation ("Agent"). Dewilio refers prospective buyer and seller opportunities ("Referred Clients") to Agent. Agent is an independent contractor and is not an employee, partner or agent of Dewilio.
 
 2. ACTIVATION FEE
-Agent pays a one-time account activation fee of $1.99 (USD). The activation fee is a one-time charge, not a subscription, and is non-refundable. Dewilio charges no monthly software fee and no upfront lead-package fee.
+Agent pays a one-time account activation fee of $49.99 (USD). The activation fee is a one-time charge, not a subscription, and is non-refundable. Dewilio charges no monthly software fee and no upfront lead-package fee.
 
 3. NO GUARANTEE OF LEADS
 Dewilio does not guarantee any minimum number, quality, frequency or exclusivity of Referred Clients. Matching depends on market coverage, Agent capacity, licensing status and other factors described in the program materials.
