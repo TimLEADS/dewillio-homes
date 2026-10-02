@@ -1,40 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarClock, Check } from "lucide-react";
-
-/**
- * EDIT ME — this is the whole point of the offer, so make it real.
- *
- * The countdown is an honest timer to this exact instant. It never resets on
- * refresh and it is shared by every visitor, so it is real urgency rather than a
- * trick. If you move the date, move it once here and the whole site follows.
- *
- * Do not add a "spots remaining" counter unless you are genuinely capping signups
- * and your backend enforces it — a count that is not enforced is a lie that a
- * single sceptical agent will call out in a Facebook group.
- */
-const OFFER_DEADLINE = "2026-11-01T23:59:59Z";
+import { OFFER_DEADLINE, OFFER_ENDS_LABEL, useOfferCountdown } from "@/lib/offer";
 
 const PERKS = [
   "$1 activation, one time — never a subscription",
   "$0 per month, for the life of the account",
   "20% referral fee only on a deal that actually closes",
 ];
-
-type Remaining = { days: number; hours: number; minutes: number; seconds: number };
-
-function timeLeft(deadline: string): Remaining | null {
-  const ms = new Date(deadline).getTime() - Date.now();
-  if (!Number.isFinite(ms) || ms <= 0) return null;
-  return {
-    days: Math.floor(ms / 86_400_000),
-    hours: Math.floor(ms / 3_600_000) % 24,
-    minutes: Math.floor(ms / 60_000) % 60,
-    seconds: Math.floor(ms / 1000) % 60,
-  };
-}
 
 function Unit({ value, label }: { value: number; label: string }) {
   return (
@@ -51,28 +25,8 @@ function Unit({ value, label }: { value: number; label: string }) {
 }
 
 export function LimitedOffer() {
-  // Null until mounted, so the server and the first client render agree and the
-  // countdown never triggers a hydration mismatch.
-  const [left, setLeft] = useState<Remaining | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const tick = () => {
-      setLeft(timeLeft(OFFER_DEADLINE));
-      setMounted(true);
-    };
-    // First paint is deferred out of the effect body so this reads as a state
-    // update from a timer callback instead of a cascading render during commit.
-    const first = setTimeout(tick, 0);
-    const id = setInterval(tick, 1000);
-    return () => {
-      clearTimeout(first);
-      clearInterval(id);
-    };
-  }, []);
-
-  const expired = mounted && left === null;
-  const endsOn = new Date(OFFER_DEADLINE);
+  const { remaining: left, ready } = useOfferCountdown();
+  const expired = ready && left === null;
 
   return (
     <div className="rise-word mt-10" style={{ "--rise-delay": "1260ms" } as React.CSSProperties}>
@@ -122,14 +76,8 @@ export function LimitedOffer() {
                 <time
                   dateTime={OFFER_DEADLINE}
                   className="text-[11px] text-brand-400"
-                  suppressHydrationWarning
                 >
-                  {endsOn.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                    timeZone: "UTC",
-                  })}
+                  {OFFER_ENDS_LABEL}
                 </time>
               </div>
 
