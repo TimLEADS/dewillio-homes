@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { getPg, setInitializer, type Db } from "./pg";
 
-export const ACTIVATION_FEE = 1;
+export const ACTIVATION_FEE: number = 1;
 export const REFERRAL_FEE_RATE = 0.2;
 export const AGREEMENT_VERSION = "1.0";
 export const DEFAULT_RESPONSE_SLA_HOURS = 24;
