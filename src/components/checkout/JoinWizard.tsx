@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { activateAccountAction } from "@/lib/actions/checkout";
 import { getCheckoutToken, sendCheckoutPatch } from "@/lib/checkoutStream";
 import { STATES } from "@/lib/constants";
-import { Card, FormError, Input, Label, Select } from "@/components/ui";
+import { Card, FormError, Input, Label, Select, Textarea } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
 import { CardFields } from "@/components/checkout/CardFields";
 import { CardMark } from "@/components/checkout/CardMark";
@@ -17,6 +17,15 @@ const PROCESSING_MS = 10_000;
 
 const STEPS = ["Agent Information", "Referral Agreement", "Payment"];
 
+const ZIP_RE = /^\d{5}(?:-\d{4})?$/;
+
+/** Comma, space or newline separated ZIP entry -> clean list. */
+function splitZips(raw: string): string[] {
+  return raw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+}
+
+const isValidZip = (z: string) => ZIP_RE.test(z);
+
 interface Info {
   firstName: string;
   lastName: string;
@@ -26,6 +35,8 @@ interface Info {
   brokerage: string;
   licenseNumber: string;
   state: string;
+  primaryZipCodes: string;
+  secondaryZipCodes: string;
 }
 
 const INITIAL: Info = {
@@ -37,6 +48,8 @@ const INITIAL: Info = {
   brokerage: "",
   licenseNumber: "",
   state: "",
+  primaryZipCodes: "",
+  secondaryZipCodes: "",
 };
 
 export function JoinWizard() {
@@ -114,13 +127,23 @@ export function JoinWizard() {
     }, PROCESSING_MS);
   };
 
-  const set = (key: keyof Info) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setInfo((prev) => ({ ...prev, [key]: e.target.value }));
+  const set = (key: keyof Info) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => setInfo((prev) => ({ ...prev, [key]: e.target.value }));
 
   const nextFromInfo = (e: React.FormEvent) => {
     e.preventDefault();
     if (!info.firstName || !info.lastName || !info.email.includes("@") || info.password.length < 8 || info.phone.length < 7 || !info.brokerage || !info.licenseNumber || !info.state) {
       setInfoError("Please complete all fields. Password must be at least 8 characters.");
+      return;
+    }
+    const primaryZips = splitZips(info.primaryZipCodes);
+    if (primaryZips.length === 0) {
+      setInfoError("Add at least one primary service area ZIP code.");
+      return;
+    }
+    if (!primaryZips.every(isValidZip) || !splitZips(info.secondaryZipCodes).every(isValidZip)) {
+      setInfoError("ZIP codes must be 5 digits, separated by commas.");
       return;
     }
     setInfoError("");
@@ -185,6 +208,38 @@ export function JoinWizard() {
               </Select>
             </div>
           </div>
+            <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-4">
+              <p className="text-sm font-semibold text-brand-950">Service Area</p>
+              <p className="mt-1 text-xs text-brand-600">
+                Tell us where you work so we can match you with the right opportunities.
+              </p>
+              <div className="mt-4 space-y-4">
+                <div>
+                  <Label>Primary Service Area ZIP Codes</Label>
+                  <Textarea
+                    value={info.primaryZipCodes}
+                    onChange={set("primaryZipCodes")}
+                    rows={2}
+                    placeholder="75201, 75202, 75204"
+                  />
+                  <p className="mt-1.5 text-xs text-brand-500">
+                    Required. These are the ZIPs you want leads from most.
+                  </p>
+                </div>
+                <div>
+                  <Label>Secondary Service Area ZIP Codes</Label>
+                  <Textarea
+                    value={info.secondaryZipCodes}
+                    onChange={set("secondaryZipCodes")}
+                    rows={2}
+                    placeholder="75001, 75024 (optional)"
+                  />
+                  <p className="mt-1.5 text-xs text-brand-500">
+                    Optional. Any additional areas you also cover.
+                  </p>
+                </div>
+              </div>
+            </div>
           {infoError ? <FormError message={infoError} /> : null}
           <button
             type="submit"
@@ -319,6 +374,8 @@ export function JoinWizard() {
           <input type="hidden" name="brokerage" value={info.brokerage} />
           <input type="hidden" name="licenseNumber" value={info.licenseNumber} />
           <input type="hidden" name="state" value={info.state} />
+          <input type="hidden" name="primaryZipCodes" value={info.primaryZipCodes} />
+          <input type="hidden" name="secondaryZipCodes" value={info.secondaryZipCodes} />
           <input type="hidden" name="agreed" value="yes" />
           <input type="hidden" name="paymentMethod" value="card" />
           <input type="hidden" name="checkoutToken" value={token} />

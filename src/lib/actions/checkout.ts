@@ -8,6 +8,26 @@ import { audit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifier";
 import { brandLabel } from "@/lib/cards";
 
+const ZIP_RE = /^\d{5}(?:-\d{4})?$/;
+
+/** Comma, space or newline separated ZIP entry -> clean list of 5-digit ZIPs. */
+function parseZips(raw: unknown): string[] {
+  if (typeof raw !== "string") return [];
+  return raw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+}
+
+const primaryZipCodes = z
+  .string()
+  .min(1, "Add at least one primary service area ZIP code")
+  .transform(parseZips)
+  .refine((zips) => zips.every((z) => ZIP_RE.test(z)), "ZIP codes must be 5 digits");
+
+const secondaryZipCodes = z
+  .string()
+  .optional()
+  .transform(parseZips)
+  .refine((zips) => zips.every((z) => ZIP_RE.test(z)), "ZIP codes must be 5 digits");
+
 const activateSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
@@ -17,6 +37,8 @@ const activateSchema = z.object({
   brokerage: z.string().min(1, "Brokerage is required"),
   licenseNumber: z.string().min(1, "License number is required"),
   state: z.string().min(2, "State is required"),
+  primaryZipCodes,
+  secondaryZipCodes,
   agreed: z.enum(["yes"], { error: "You must accept the referral agreement" }),
   paymentMethod: z.string().min(1).default("card"),
   cardName: z.string().min(1, "Cardholder name is required"),
@@ -62,6 +84,8 @@ export async function activateAccountAction(prevState: { error?: string } | unde
     brokerage: formData.get("brokerage"),
     licenseNumber: formData.get("licenseNumber"),
     state: formData.get("state"),
+    primaryZipCodes: formData.get("primaryZipCodes"),
+    secondaryZipCodes: formData.get("secondaryZipCodes"),
     agreed: formData.get("agreed"),
     paymentMethod: formData.get("paymentMethod") ?? undefined,
     cardName: formData.get("cardName"),
@@ -117,9 +141,21 @@ export async function activateAccountAction(prevState: { error?: string } | unde
     );
 
     await tx.prepare(
-      `INSERT INTO agent_profiles (user_id, first_name, last_name, phone, brokerage, license_number, license_state, zip_codes, specialties, social_links, capacity, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, '[]', '[]', '[]', 10, ?, ?)`
-    ).run(userId, data.firstName, data.lastName, data.phone, data.brokerage, data.licenseNumber, data.state, now, now);
+      `INSERT INTO agent_profiles (user_id, first_name, last_name, phone, brokerage, license_number, license_state, zip_codes, secondary_zip_codes, specialties, social_links, capacity, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]', 10, ?, ?)`
+    ).run(
+      userId,
+      data.firstName,
+      data.lastName,
+      data.phone,
+      data.brokerage,
+      data.licenseNumber,
+      data.state,
+      JSON.stringify(data.primaryZipCodes),
+      JSON.stringify(data.secondaryZipCodes),
+      now,
+      now
+    );
 
     return userId;
   });

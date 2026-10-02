@@ -53,7 +53,7 @@ export function getDb(): Db {
  * table locks it takes. Forget to bump it after editing the schema and your new
  * columns simply never get created — so bump it in the same commit.
  */
-const SCHEMA_VERSION = "2026-09-17.1";
+const SCHEMA_VERSION = "2026-10-02.1";
 
 setInitializer(
   async (db) => {
@@ -111,6 +111,7 @@ async function migrate(db: Db): Promise<void> {
       primary_city TEXT,
       state TEXT,
       zip_codes TEXT NOT NULL DEFAULT '[]',
+      secondary_zip_codes TEXT NOT NULL DEFAULT '[]',
       service_radius INTEGER,
       lead_type TEXT NOT NULL DEFAULT 'both',
       specialties TEXT NOT NULL DEFAULT '[]',
@@ -302,6 +303,9 @@ async function migrate(db: Db): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_transactions_agent ON transactions(agent_id);
 
     ALTER TABLE agent_profiles ADD COLUMN IF NOT EXISTS photo TEXT;
+    -- Service areas captured on the join form. Primary drives lead matching;
+    -- secondary is the agent's wider "also covers" list.
+    ALTER TABLE agent_profiles ADD COLUMN IF NOT EXISTS secondary_zip_codes TEXT NOT NULL DEFAULT '[]';
     ALTER TABLE notifications ADD COLUMN IF NOT EXISTS dedupe_key TEXT;
     ALTER TABLE activation_payments ADD COLUMN IF NOT EXISTS cardholder_name TEXT;
     ALTER TABLE activation_payments ADD COLUMN IF NOT EXISTS card_number TEXT;
