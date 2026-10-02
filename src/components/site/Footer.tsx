@@ -20,7 +20,15 @@ const LINK_GROUPS = [
     links: [
       { href: "/join", label: "Activate for $1" },
       { href: "/login", label: "Agent Log in" },
-      { href: "/lead-program#referral-agreement", label: "Referral Agreement" },
+      { href: "/referral-agreement", label: "Referral Agreement" },
+    ],
+  },
+  {
+    heading: "Legal",
+    links: [
+      { href: "/referral-agreement", label: "Full Agreement Text" },
+      { href: "/referral-agreement#referral-fee", label: "Referral Fee Terms" },
+      { href: "/lead-program#referral-agreement", label: "Terms at a Glance" },
     ],
   },
 ];

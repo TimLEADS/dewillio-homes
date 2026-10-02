@@ -249,6 +249,17 @@ export default function LeadProgramPage() {
                 ))}
 
                 <Link
+                  href="/referral-agreement"
+                  className="group inline-flex items-center gap-2 text-sm font-semibold text-brand-900 underline decoration-accent-400 decoration-2 underline-offset-4 transition-colors hover:text-accent-600"
+                >
+                  Read the full agreement
+                  <ArrowRight
+                    size={15}
+                    className="transition-transform duration-500 group-hover:translate-x-1"
+                  />
+                </Link>
+
+                <Link
                   href="/join"
                   className="btn-sheen group inline-flex items-center gap-2 rounded-full bg-brand-950 px-6 py-3.5 text-sm font-bold text-white transition-all duration-500 hover:shadow-lg"
                 >

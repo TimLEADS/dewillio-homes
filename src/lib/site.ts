@@ -36,6 +36,7 @@ export const PUBLIC_ROUTES: Array<{ path: string; priority: number; changeFreque
   { path: "/lead-program", priority: 0.8, changeFrequency: "monthly" },
   { path: "/faq", priority: 0.7, changeFrequency: "monthly" },
   { path: "/join", priority: 0.9, changeFrequency: "monthly" },
+  { path: "/referral-agreement", priority: 0.6, changeFrequency: "monthly" },
 ];
 
 /** Everything a crawler must stay out of: private areas and the API. */
