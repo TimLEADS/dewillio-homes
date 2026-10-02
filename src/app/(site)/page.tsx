@@ -17,6 +17,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Container, SectionHeading } from "@/components/ui";
+import { LimitedOffer } from "@/components/site/LimitedOffer";
 import { Carousel, CountUp, Marquee, Parallax, Reveal, SpotlightCard } from "@/components/motion";
 import { AGENT_PORTRAITS, PHOTOS } from "@/lib/images";
 import type { Metadata } from "next";
@@ -222,6 +223,8 @@ export default function HomePage() {
                   </span>
                 ))}
               </div>
+
+              <LimitedOffer />
             </div>
 
             {/* Floating dashboard preview */}
