@@ -192,7 +192,7 @@ export async function updateProfileAction(prevState: unknown, formData: FormData
 
 const passwordSchema = z.object({
   current: z.string().min(1),
-  next: z.string().min(8),
+  next: z.string().min(1),
 });
 
 export async function changePasswordAction(prevState: unknown, formData: FormData) {
@@ -202,7 +202,7 @@ export async function changePasswordAction(prevState: unknown, formData: FormDat
     current: formData.get("current"),
     next: formData.get("next"),
   });
-  if (!parsed.success) return { error: "New password must be at least 8 characters." };
+  if (!parsed.success) return { error: "Choose a new password." };
   const db = getDb();
   const row = await db.prepare("SELECT password_hash FROM users WHERE id = ?").get(user.id) as { password_hash: string };
   if (!verifyPassword(parsed.data.current, row.password_hash)) return { error: "Current password is incorrect." };

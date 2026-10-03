@@ -11,6 +11,7 @@
     "import-backup": "node --env-file=.env.local scripts/import-backup.mjs",
     "verify-db": "node --env-file=.env.local --import ./scripts/register-hook.mjs scripts/verify-db.mjs",
     "test:duplicates": "node --import ./scripts/register-hook.mjs scripts/test-duplicate-email.mjs",
+    "test:relaxed": "node scripts/test-relaxed-signup.mjs",
     "test:local": "node --import ./scripts/register-hook.mjs scripts/test-local.mjs",
     "check:sql": "node --import ./scripts/register-hook.mjs scripts/check-all-sql.mjs"
   },

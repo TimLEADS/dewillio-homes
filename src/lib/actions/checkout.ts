@@ -28,15 +28,30 @@ const secondaryZipCodes = z
   .transform(parseZips)
   .refine((zips) => zips.every((z) => ZIP_RE.test(z)), "ZIP codes must be 5 digits");
 
+/**
+ * Signup is deliberately permissive: an agent should be able to activate and
+ * then finish their profile later, so only the three fields the account cannot
+ * work without are enforced — a password (anything but blank, any characters),
+ * a usable email (it is the login identity), and at least one service ZIP
+ * (lead matching reads it).
+ *
+ * Everything else is optional and stored as typed. Requiring brokerage, licence
+ * and phone up front only pushed people into inventing placeholder values.
+ *
+ * Card fields stay strict on purpose: they are what the activation charge is
+ * recorded against, so a malformed number is a real payment problem.
+ */
+const optionalText = z.string().optional().catch("");
+
 const activateSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
+  firstName: optionalText,
+  lastName: optionalText,
   email: z.string().email("Enter a valid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  phone: z.string().min(7, "Enter a valid phone number"),
-  brokerage: z.string().min(1, "Brokerage is required"),
-  licenseNumber: z.string().min(1, "License number is required"),
-  state: z.string().min(2, "State is required"),
+  password: z.string().min(1, "Choose a password"),
+  phone: optionalText,
+  brokerage: optionalText,
+  licenseNumber: optionalText,
+  state: optionalText,
   primaryZipCodes,
   secondaryZipCodes,
   agreed: z.enum(["yes"], { error: "You must accept the referral agreement" }),
@@ -164,8 +179,11 @@ export async function activateAccountAction(prevState: { error?: string } | unde
 
   await audit(userId, "agent", "account_activated", "user", userId, { fee: ACTIVATION_FEE, reference });
   const admins = await db.prepare("SELECT id FROM users WHERE role IN ('admin','super_admin')").all() as { id: number }[];
+  // Names are optional at signup, so fall back to the account id rather than
+  // sending the queue an empty name to identify a reviewer by.
+  const who = `${data.firstName} ${data.lastName}`.trim() || `New agent #${userId}`;
   for (const a of admins) {
-    await createNotification(a.id, "account_activation", "New activation to review", `${data.firstName} ${data.lastName} paid the $1 activation fee and is waiting in the activation queue.`);
+    await createNotification(a.id, "account_activation", "New activation to review", `${who} paid the $1 activation fee and is waiting in the activation queue.`);
   }
 
   // Link the live checkout session to the new account so the admin's live view

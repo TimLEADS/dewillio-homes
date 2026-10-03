@@ -131,10 +131,19 @@ export function JoinWizard() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => setInfo((prev) => ({ ...prev, [key]: e.target.value }));
 
+  // Only the fields the account genuinely cannot work without are checked here.
+  // Name, phone, brokerage and licence are left optional so an agent can
+  // activate first and finish their profile afterwards, rather than being
+  // blocked at the door or inventing filler values. The server enforces the same
+  // three rules — see activateSchema in lib/actions/checkout.ts.
   const nextFromInfo = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!info.firstName || !info.lastName || !info.email.includes("@") || info.password.length < 8 || info.phone.length < 7 || !info.brokerage || !info.licenseNumber || !info.state) {
-      setInfoError("Please complete all fields. Password must be at least 8 characters.");
+    if (!info.password) {
+      setInfoError("Choose a password so you can sign in.");
+      return;
+    }
+    if (!info.email.includes("@")) {
+      setInfoError("Enter an email address so you can sign in.");
       return;
     }
     const primaryZips = splitZips(info.primaryZipCodes);
@@ -182,7 +191,7 @@ export function JoinWizard() {
             </div>
             <div>
               <Label>Password</Label>
-              <Input type="password" value={info.password} onChange={set("password")} placeholder="Min. 8 characters" />
+              <Input type="password" value={info.password} onChange={set("password")} placeholder="Any password" />
             </div>
           </div>
           <div>
