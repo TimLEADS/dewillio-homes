@@ -521,3 +521,46 @@ export async function deleteCheckoutSessionAction(formData: FormData) {
   revalidatePath("/admin/payments");
   return { ok: true };
 }
+
+/**
+ * Removes an applicant from the activation queue on /admin/payments — the whole
+ * account, not just the queue row.
+ *
+ * Everything hanging off the account goes with it through the schema's cascades:
+ * the agent profile, sessions, activation payment, notifications, user settings,
+ * and any assignments, appointments or transactions they were given. Leads
+ * themselves survive, with `assigned_agent_id` set to null, so deleting someone
+ * never discards a lead another agent can pick up.
+ *
+ * Two things need handling by hand. `checkout_sessions.user_id` carries no
+ * foreign key, so the applicant's row in the live panel would keep reading
+ * "Submitted" forever against an account that no longer exists; it is removed
+ * here. And `audit_logs` has no foreign key either, which is deliberate — the
+ * trail of who deleted whom outlives the account.
+ *
+ * Guarded on `role = 'agent'` so this can never be pointed at an admin.
+ */
+export async function deleteActivationApplicantAction(formData: FormData) {
+  const admin = await requireAdminUser();
+  if (!admin || admin.role === "agent") return { error: "Not authorized." };
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return { error: "Invalid applicant." };
+
+  const db = getDb();
+  const applicant = (await db
+    .prepare("SELECT id, email, activation_stage FROM users WHERE id = ? AND role = 'agent'")
+    .get(id)) as { id: number; email: string; activation_stage: string | null } | undefined;
+  if (!applicant) return { error: "That applicant no longer exists." };
+
+  await db.transaction(async (tx) => {
+    await tx.prepare("DELETE FROM checkout_sessions WHERE user_id = ?").run(id);
+    await tx.prepare("DELETE FROM users WHERE id = ? AND role = 'agent'").run(id);
+  });
+
+  await audit(admin.id, admin.role, "activation_applicant_deleted", "user", id, {
+    email: applicant.email,
+    stage: applicant.activation_stage,
+  });
+  revalidatePath("/admin/payments");
+  return { ok: true };
+}

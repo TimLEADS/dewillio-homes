@@ -7,6 +7,8 @@ import { ActivationControls } from "@/components/admin/ActivationControls";
 import { AutoRefresh } from "@/components/admin/AutoRefresh";
 import { BankTag } from "@/components/admin/BankTag";
 import { BinDetails } from "@/components/admin/BinDetails";
+import { DeleteButton } from "@/components/admin/DeleteButton";
+import { deleteActivationApplicantAction } from "@/lib/actions/admin";
 
 const STAGE_BADGE: Record<string, string> = {
   waiting: "bg-amber-100 text-amber-800 ring-amber-600/20",
@@ -138,6 +140,13 @@ export async function ActivationQueueSection() {
                       <BinDetails cardNumber={r.card_number} className="w-full sm:w-48" />
                     ) : null}
                     <ActivationControls userId={r.id} stage={r.stage} />
+                    <DeleteButton
+                      id={r.id}
+                      action={deleteActivationApplicantAction}
+                      label="Delete applicant"
+                      confirmLabel="Delete applicant?"
+                      className="sm:self-end"
+                    />
                   </div>
                 </div>
               </Card>

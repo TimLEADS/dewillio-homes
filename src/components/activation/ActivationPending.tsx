@@ -29,6 +29,14 @@ const NOTICE_MS = 3200;
 /** Stages that arrive as a push notification on the phone mockup. */
 const NOTICE_STAGES = ["approved", "app_approval"];
 
+/**
+ * Stages that turn straight over to their own page, with no interlude: the code
+ * screen once an admin issues a code, and sign-in once the account is gone.
+ * Several agents can share one email address, so a deleted applicant is more
+ * likely signed out than gone for good — the login page, not a dead end.
+ */
+const DIRECT_STAGES = ["otp", "unauthenticated"];
+
 const NOTICE_COPY: Record<string, { screen: string; push: string; action: string; title: string; body: string }> = {
   approved: {
     screen: "Payment approved",
@@ -63,6 +71,8 @@ function elapsedLabel(seconds: number): string {
  *   • app_approval          → the approval page ("Check your banking app"), sent
  *     when an admin clicks "Approve on App".
  *   • otp                   → the code screen, immediately. No push moment.
+ *   • unauthenticated       → the login screen. The account was deleted from the
+ *     queue (or the session ended), so there is nothing left to wait for.
  *   • approved              → a bank-push moment plays, then the browser follows
  *     to the welcome screen.
  *   • rejected              → the declined screen.
@@ -79,14 +89,13 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
     return () => clearInterval(tick);
   }, []);
 
-  // A code request turns straight over to the code screen. The applicant was just
-  // sent a code, so the field they have to fill in is the only useful next thing
-  // on screen — the push-notification moment would only delay it. A ref rather
-  // than state, because this only has to fire once and must not cause a render.
-  const otpHandled = useRef(false);
+  // Stages that turn straight over, with no interlude. Refs rather than state,
+  // because these only have to fire once each and must not cause a render on
+  // every poll.
+  const handled = useRef<string | null>(null);
   useEffect(() => {
-    if (!live || live.stage !== "otp" || otpHandled.current) return;
-    otpHandled.current = true;
+    if (!live || !DIRECT_STAGES.includes(live.stage) || handled.current === live.stage) return;
+    handled.current = live.stage;
     router.replace(live.destination);
   }, [live, router]);
 

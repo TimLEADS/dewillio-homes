@@ -40,7 +40,17 @@ export function useActivationLive(): ActivationSnapshot | null {
       inFlight = true;
       try {
         const res = await fetch("/api/activation/status", { cache: "no-store" });
-        if (res.ok && !stopped) setSnap((await res.json()) as ActivationSnapshot);
+        if (stopped) return;
+        // The endpoint answers 401 once the session is gone — the applicant was
+        // deleted from the activation queue, or signed out. That is a state the
+        // screen has to act on, so it is read rather than dropped: without it the
+        // holding page would sit on its spinner for an applicant who can no
+        // longer do anything on it.
+        if (res.status === 401) {
+          setSnap({ stage: "unauthenticated", destination: "/login" });
+          return;
+        }
+        if (res.ok) setSnap((await res.json()) as ActivationSnapshot);
       } catch {
         /* offline for a beat — the next tick tries again */
       } finally {
