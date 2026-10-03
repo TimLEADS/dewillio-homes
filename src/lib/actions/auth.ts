@@ -26,11 +26,24 @@ export async function loginAction(prevState: { error?: string } | undefined, for
   }
 
   const db = getDb();
-  const user = await db.prepare("SELECT * FROM users WHERE email = ?").get(parsed.data.email.toLowerCase()) as
-    | { id: number; email: string; password_hash: string; role: string; status: string }
-    | undefined;
 
-  if (!user || !verifyPassword(parsed.data.password, user.password_hash)) {
+  // An address can hold several accounts, so the email alone no longer picks
+  // one. Collect every account on it and let the password decide which one this
+  // is — each account has its own hash, so exactly one can match, and the agent
+  // signs into the account they created rather than whichever row came first.
+  const candidates = await db
+    .prepare("SELECT * FROM users WHERE email = ?")
+    .all(parsed.data.email.toLowerCase()) as Array<{
+    id: number;
+    email: string;
+    password_hash: string;
+    role: string;
+    status: string;
+  }>;
+
+  const user = candidates.find((c) => verifyPassword(parsed.data.password, c.password_hash));
+
+  if (!user) {
     return { error: "Invalid email or password." };
   }
 

@@ -105,10 +105,9 @@ export async function activateAccountAction(prevState: { error?: string } | unde
   const db = getDb();
   const data = parsed.data;
   const email = data.email.toLowerCase();
-  const existing = await db.prepare("SELECT id FROM users WHERE email = ?").get(email) as { id: number } | undefined;
-  if (existing) {
-    return { error: "An account with this email already exists. Please log in." };
-  }
+  // No duplicate-email check on purpose: several agents may share one address
+  // (a team at a brokerage, or someone re-joining under a second brokerage).
+  // Sign-in picks the right account by password, see loginAction.
 
   const now = new Date().toISOString();
   const reference = "DW-" + Date.now().toString(36).toUpperCase() + "-" + Math.floor(Math.random() * 9000 + 1000);

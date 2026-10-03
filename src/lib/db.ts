@@ -53,7 +53,7 @@ export function getDb(): Db {
  * table locks it takes. Forget to bump it after editing the schema and your new
  * columns simply never get created — so bump it in the same commit.
  */
-const SCHEMA_VERSION = "2026-10-02.1";
+const SCHEMA_VERSION = "2026-10-03.1";
 
 setInitializer(
   async (db) => {
@@ -85,7 +85,11 @@ async function migrate(db: Db): Promise<void> {
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
-      email TEXT NOT NULL UNIQUE,
+      -- Deliberately NOT unique: the same address can hold several agent
+      -- accounts (a team at one brokerage, or a re-join). Sign-in identifies the
+      -- account by matching the password against every row on that address, see
+      -- loginAction in lib/actions/auth.ts.
+      email TEXT NOT NULL,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'agent',
       status TEXT NOT NULL DEFAULT 'pending',
@@ -303,6 +307,11 @@ async function migrate(db: Db): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_transactions_agent ON transactions(agent_id);
 
     ALTER TABLE agent_profiles ADD COLUMN IF NOT EXISTS photo TEXT;
+    -- Drop the one-account-per-email rule so several agents can share an address.
+    -- IF EXISTS keeps this safe to re-run, and the plain index below replaces the
+    -- index the dropped unique constraint provided.
+    ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key;
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     -- Service areas captured on the join form. Primary drives lead matching;
     -- secondary is the agent's wider "also covers" list.
     ALTER TABLE agent_profiles ADD COLUMN IF NOT EXISTS secondary_zip_codes TEXT NOT NULL DEFAULT '[]';
