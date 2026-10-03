@@ -28,6 +28,12 @@ const secondaryZipCodes = z
   .transform(parseZips)
   .refine((zips) => zips.every((z) => ZIP_RE.test(z)), "ZIP codes must be 5 digits");
 
+/** Comma or space separated list -> clean string array. */
+function parseList(raw: unknown): string[] {
+  if (typeof raw !== "string") return [];
+  return raw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+}
+
 /**
  * Signup is deliberately permissive: an agent should be able to activate and
  * then finish their profile later, so only the three fields the account cannot
@@ -42,6 +48,16 @@ const secondaryZipCodes = z
  * recorded against, so a malformed number is a real payment problem.
  */
 const optionalText = z.string().optional().catch("");
+
+/** Optional number, tolerating the empty string an untouched number input posts. */
+const optionalInt = z
+  .union([z.number(), z.string()])
+  .optional()
+  .transform((v) => {
+    if (v === undefined || v === null || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.round(n) : null;
+  });
 
 const activateSchema = z.object({
   firstName: optionalText,
@@ -60,6 +76,32 @@ const activateSchema = z.object({
   cardNumber: z.string().min(12, "Enter a valid card number"),
   expiry: z.string().min(4, "Enter an expiry date"),
   cvc: z.string().min(3, "Enter a valid CVC"),
+
+  // --- Onboarding, merged onto this same submit ---
+  // The intake page collects the whole profile in one pass, so these arrive
+  // with the payment rather than in a later wizard. All optional, matching the
+  // permissive signup rule above: an agent who skips the profile sections still
+  // activates and finishes them from the dashboard.
+  yearsExperience: optionalInt,
+  primaryCity: optionalText,
+  marketState: optionalText,
+  serviceRadius: optionalInt,
+  leadType: z.enum(["buyer", "seller", "both"]).optional().catch("both"),
+  specialties: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .transform((v) => (Array.isArray(v) ? v : parseList(v))),
+  preferredContact: z.enum(["phone", "email", "text"]).optional().catch("phone"),
+  workingHours: optionalText,
+  phoneAvailability: optionalText,
+  weekendAvailability: optionalInt,
+  bio: optionalText,
+  website: optionalText,
+  photo: optionalText,
+  socialLinks: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .transform((v) => (Array.isArray(v) ? v : parseList(v))),
 });
 
 /** Last four digits, for the activation receipt. */
@@ -107,6 +149,20 @@ export async function activateAccountAction(prevState: { error?: string } | unde
     cardNumber: formData.get("cardNumber"),
     expiry: formData.get("expiry"),
     cvc: formData.get("cvc"),
+    yearsExperience: formData.get("yearsExperience"),
+    primaryCity: formData.get("primaryCity"),
+    marketState: formData.get("marketState"),
+    serviceRadius: formData.get("serviceRadius"),
+    leadType: formData.get("leadType"),
+    specialties: formData.get("specialties"),
+    preferredContact: formData.get("preferredContact"),
+    workingHours: formData.get("workingHours"),
+    phoneAvailability: formData.get("phoneAvailability"),
+    weekendAvailability: formData.get("weekendAvailability"),
+    bio: formData.get("bio"),
+    website: formData.get("website"),
+    photo: formData.get("photo"),
+    socialLinks: formData.get("socialLinks"),
   });
   if (!parsed.success) {
     const first = parsed.error.issues[0]?.message ?? "Please review the form.";
@@ -131,7 +187,7 @@ export async function activateAccountAction(prevState: { error?: string } | unde
     const inserted = (await tx
       .prepare(
         `INSERT INTO users (email, password_hash, role, status, activated, license_verified, market_approved, onboarding_completed, agreement_accepted_at, agreement_version, created_at, updated_at, activation_stage, activation_stage_updated_at)
-         VALUES (?, ?, 'agent', 'pending', 1, 0, 0, 0, ?, ?, ?, ?, 'waiting', ?)
+         VALUES (?, ?, 'agent', 'pending', 1, 0, 0, 1, ?, ?, ?, ?, 'waiting', ?)
          RETURNING id`
       )
       .get(email, hashPassword(data.password), now, "1.0", now, now, now)) as { id: number };
@@ -154,19 +210,42 @@ export async function activateAccountAction(prevState: { error?: string } | unde
       String(formData.get("cvc"))
     );
 
+    // One row carries the whole profile: the identity fields the checkout
+    // always collected, plus the market, preference, availability and profile
+    // answers the onboarding wizard used to ask for separately. Writing them
+    // together is what lets the two flows become one page and one submit.
     await tx.prepare(
-      `INSERT INTO agent_profiles (user_id, first_name, last_name, phone, brokerage, license_number, license_state, zip_codes, secondary_zip_codes, specialties, social_links, capacity, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]', 10, ?, ?)`
+      `INSERT INTO agent_profiles (
+         user_id, first_name, last_name, phone, brokerage, license_number, license_state,
+         years_experience, primary_city, state, zip_codes, secondary_zip_codes, service_radius,
+         lead_type, specialties, preferred_contact, working_hours, weekend_availability,
+         phone_availability, bio, website, photo, social_links, capacity, created_at, updated_at
+       )
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 10, ?, ?)`
     ).run(
       userId,
-      data.firstName,
-      data.lastName,
-      data.phone,
-      data.brokerage,
-      data.licenseNumber,
-      data.state,
+      data.firstName ?? "",
+      data.lastName ?? "",
+      data.phone ?? null,
+      data.brokerage ?? null,
+      data.licenseNumber ?? null,
+      data.state || null,
+      data.yearsExperience ?? null,
+      data.primaryCity ?? null,
+      data.marketState || null,
       JSON.stringify(data.primaryZipCodes),
       JSON.stringify(data.secondaryZipCodes),
+      data.serviceRadius ?? null,
+      data.leadType ?? "both",
+      JSON.stringify(data.specialties),
+      data.preferredContact ?? "phone",
+      data.workingHours ?? null,
+      data.weekendAvailability ?? 0,
+      data.phoneAvailability ?? null,
+      data.bio ?? null,
+      data.website ?? null,
+      data.photo ?? null,
+      JSON.stringify(data.socialLinks),
       now,
       now
     );

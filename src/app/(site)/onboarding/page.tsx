@@ -14,6 +14,9 @@ export default async function OnboardingPage() {
   if (!user) redirect("/login");
   if (user.role !== "agent") redirect("/admin");
   if (!user.activated) redirect("/join");
+  // Activation now collects the whole profile in one pass, so anyone who has
+  // already onboarded edits it in the dashboard rather than re-running the wizard.
+  if (user.onboarding_completed === 1) redirect("/dashboard/profile");
 
   const db = getDb();
   // Hold applicants at the activation gate until an admin has approved them, so

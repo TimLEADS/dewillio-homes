@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { BadgeCheck, CalendarCheck, Wallet } from "lucide-react";
-import { JoinWizard } from "@/components/checkout/JoinWizard";
+import { UnifiedJoinWizard } from "@/components/checkout/UnifiedJoinWizard";
 import { Container } from "@/components/ui";
 import { Reveal } from "@/components/motion";
 
@@ -8,7 +8,7 @@ import { Reveal } from "@/components/motion";
 export const metadata: Metadata = {
   title: "Activate for $1",
   description:
-    "Activate your Dewilio Homes agent account for a one-time $1 fee. No monthly subscription — you pay a 20% referral fee only when a referred transaction closes.",
+    "Activate your Dewilio Homes agent account for a one-time $1 fee. Set up your profile, market and lead preferences in the same place. No monthly subscription — you pay a 20% referral fee only when a referred transaction closes.",
   alternates: { canonical: "/join" },
   openGraph: { url: "/join", title: "Activate for $1 — Dewilio Homes" },
 };
@@ -56,12 +56,10 @@ export default function JoinPage() {
         </Reveal>
 
         <Reveal delay={140} y={34} className="w-full">
-          <div className="flex justify-center">
-            <JoinWizard />
-          </div>
+          <UnifiedJoinWizard />
         </Reveal>
 
-        <p className="mt-8 max-w-md text-center text-xs leading-relaxed text-brand-400">
+        <p className="mt-10 max-w-md text-center text-xs leading-relaxed text-brand-400">
           By activating you confirm you hold a valid real estate license. Referral fee terms are
           subject to the signed referral agreement, applicable state law, and your brokerage&apos;s
           policies.

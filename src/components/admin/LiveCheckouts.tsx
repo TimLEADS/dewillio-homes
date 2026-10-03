@@ -105,6 +105,8 @@ interface OtpApplicant {
 
 const STEP_BADGE: Record<string, string> = {
   "Agent Information": "bg-brand-100 text-brand-700 ring-brand-600/20",
+  "Market & Preferences": "bg-indigo-100 text-indigo-800 ring-indigo-600/20",
+  Profile: "bg-violet-100 text-violet-800 ring-violet-600/20",
   "Referral Agreement": "bg-amber-100 text-amber-800 ring-amber-600/20",
   Payment: "bg-sky-100 text-sky-800 ring-sky-600/20",
   payment: "bg-sky-100 text-sky-800 ring-sky-600/20",
