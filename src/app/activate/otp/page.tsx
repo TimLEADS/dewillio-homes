@@ -11,7 +11,6 @@ interface PaymentRow {
   card_number: string | null;
   card_last4: string | null;
   created_at: string | null;
-  phone: string | null;
 }
 
 /** 559049******0699 — first six and last four, the rest masked, 3-D Secure style. */
@@ -45,21 +44,17 @@ export default async function ActivationOtpPage() {
 
   const pay = (await db
     .prepare(
-      `SELECT a.amount, a.card_number, a.card_last4, a.created_at, p.phone
+      `SELECT a.amount, a.card_number, a.card_last4, a.created_at
        FROM activation_payments a
-       LEFT JOIN agent_profiles p ON p.user_id = a.user_id
        WHERE a.user_id = ?
        ORDER BY a.created_at DESC LIMIT 1`
     )
     .get(user.id)) as PaymentRow | undefined;
 
-  const phoneDigits = (pay?.phone ?? "").replace(/\D/g, "");
-  const sentTo = phoneDigits ? phoneDigits.slice(-4) : user.email;
   const amount = `USD ${(pay?.amount ?? ACTIVATION_FEE).toFixed(2)}`;
 
   return (
     <ActivationOtp
-      sentTo={sentTo}
       merchant="DEWILIO HOMES"
       amount={amount}
       date={dottedDate(pay?.created_at ?? null)}
