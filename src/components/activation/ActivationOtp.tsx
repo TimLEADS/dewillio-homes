@@ -89,10 +89,12 @@ export function ActivationOtp({ merchant, amount, date, cardNumber }: Props) {
   return (
     <main className="flex min-h-screen items-start justify-center bg-slate-100 px-4 py-8 sm:items-center">
       <div className="w-full max-w-[27rem] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
-        {/* Header — processor wordmark left, card-network ID Check right */}
+        {/* Header — the site's own wordmark left, card-network ID Check right.
+            A named processor does not belong on our page, so the brand here is
+            Dewilio Homes rather than a payment provider we don't use. */}
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <span className="text-xl font-extrabold tracking-tight" style={{ color: "#00b3a4" }}>
-            SADA<span style={{ color: "#0b3b60" }}>PAY</span>
+          <span className="font-display text-lg font-bold tracking-tight text-brand-950">
+            Dewilio<span className="text-accent-600">Homes</span>
           </span>
           <span className="flex items-center gap-2">
             <CardNetworkMark />
